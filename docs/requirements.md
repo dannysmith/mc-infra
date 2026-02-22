@@ -16,7 +16,7 @@ This VPS is for **everything else**: creative worlds, experimentation, mod/plugi
 
 **Plan**: Start with **CAX21** (ARM, 4 vCPU, 8GB RAM, 80GB SSD, ~€6.49/mo) or **CCX13** (dedicated x86, 2 vCPU, 8GB RAM, 80GB SSD, ~€12.49/mo).
 
-**Location**: Falkenstein or Nuremberg, Germany. ~20-30ms from UK - fine for 1-2 players.
+**Location**: Helsinki, Finland (hel1-dc2). ~40-50ms from UK - fine for 1-2 players. CAX21 was unavailable in Falkenstein/Nuremberg at time of provisioning.
 
 ### Decisions & Notes
 
@@ -44,9 +44,9 @@ This VPS is for **everything else**: creative worlds, experimentation, mod/plugi
 
 ## 2. OS & Base System
 
-### Decision: Debian 12
+### Decision: Debian 13 (Trixie)
 
-Leaner than Ubuntu, recommended by setupmc.com, available as a Hetzner one-click image. All the tooling we need (Docker, Nginx, JDK 21, etc.) is well-supported on Debian.
+Leaner than Ubuntu, recommended by setupmc.com, available as a Hetzner one-click image. All the tooling we need (Docker, Nginx, JDK 21, etc.) is well-supported on Debian. Debian 13 was the current stable at time of provisioning.
 
 ### Base Setup
 

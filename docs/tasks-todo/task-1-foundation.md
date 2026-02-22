@@ -6,8 +6,9 @@ Get a working VPS with a single Minecraft server connectable from a local client
 
 ### 1. Provision Hetzner VPS
 
-- Create a CAX21 (ARM, 4 vCPU, 8GB RAM, 80GB SSD) in Falkenstein or Nuremberg
-- Debian 12 image
+- ~~Create a CAX21 (ARM, 4 vCPU, 8GB RAM, 80GB SSD) in Helsinki (hel1-dc2)~~ DONE
+- ~~Debian 13 (Trixie) image~~ DONE
+- ~~Add SSH key during provisioning~~ DONE
 - Add SSH key during provisioning
 - **Do not upgrade the disk during any future rescale operations** (see requirements.md section 1)
 
