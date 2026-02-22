@@ -1,0 +1,47 @@
+services:
+  creative:
+    image: itzg/minecraft-server
+    container_name: creative
+    env_file:
+      - servers/creative/env
+    environment:
+      EULA: "TRUE"
+      TYPE: FABRIC
+      VERSION: LATEST
+      MEMORY: 4G
+      MODRINTH_PROJECTS: |
+        fabric-api
+        lithium
+        ferritecore
+        noisium
+        scalablelux
+        c2me-fabric
+        distant-horizons
+        bluemap
+        simple-voice-chat
+      WHITELIST_ENABLED: "true"
+      ENFORCE_WHITELIST: "true"
+      OPS: d2683803
+      WHITELIST: d2683803
+      MOTD: "Creative Server"
+      DIFFICULTY: normal
+      MODE: creative
+      RCON_PASSWORD: ${RCON_PASSWORD}
+      ENABLE_COMMAND_BLOCK: "true"
+    ports:
+      - "25565:25565"
+      - "24454:24454/udp"
+    volumes:
+      - ./servers/creative/data:/data
+    networks:
+      - minecraft-net
+    deploy:
+      resources:
+        limits:
+          memory: 5g
+          cpus: "2.0"
+    restart: unless-stopped
+
+networks:
+  minecraft-net:
+    driver: bridge

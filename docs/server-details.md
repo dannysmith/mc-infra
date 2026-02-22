@@ -24,14 +24,53 @@
 | IPv4 | 89.167.86.134           |
 | IPv6 | 2a01:4f9:c014:408a::/64 |
 
+### DNS
+
+Managed via DNSimple on the `danny.is` domain.
+
+| Record          | Type | Value         |
+| --------------- | ---- | ------------- |
+| `mc.danny.is`   | A    | 89.167.86.134 |
+| `*.mc.danny.is` | A    | 89.167.86.134 |
+
+Servers are addressed as `<name>.mc.danny.is` (e.g. `creative.mc.danny.is`). BlueMap UIs as `map-<name>.mc.danny.is`.
+
 ### SSH Access
 
 ```
-ssh root@89.167.86.134
+ssh danny@89.167.86.134
 ```
 
-After setup.sh runs, use the non-root user instead.
+(`root@89.167.86.134` was disabled by `setup.sh`)
 
 ### Rescale Warning
 
 **Never upgrade disk size during a rescale operation.** Always select "CPU and RAM only". Upgrading the disk permanently locks you out of downgrading to a smaller plan.
+
+
+## 1Password
+
+| Field           | Value                                                                       |
+| --------------- | --------------------------------------------------------------------------- |
+| Vault           | MC Server                                                                   |
+| Service Account | Scoped to the MC Server vault only                                          |
+| Token Location  | `OP_SERVICE_ACCOUNT_TOKEN` env var on VPS (in `~/.secrets/op`, `chmod 600`) |
+
+Secrets are referenced in `.env.tpl` using `op://MC Server/...` URIs and injected at runtime via `op run --env-file=.env.tpl`.
+
+## Installed Software
+
+`setup.sh` is the primary reference for everything installed on the host. Key components:
+
+**Infrastructure:**
+- Docker Engine + Docker Compose (from Docker's official Debian repo)
+- Nginx (reverse proxy for BlueMap UIs, SSL termination)
+- certbot + certbot-dns-dnsimple (via pipx, for `*.mc.danny.is` wildcard certs)
+- UFW (firewall — ports 22, 80, 443, 25565/tcp, 24454/udp)
+- fail2ban (SSH brute-force protection)
+- unattended-upgrades (automatic security patches)
+- 1Password CLI (`op`)
+
+**Development:**
+- OpenJDK 21 (headless — for Fabric mod development / Gradle)
+- Bun, uv, GitHub CLI, Claude Code (installed as user `danny`)

@@ -1,6 +1,6 @@
 # MC Infrastructure
 
-Self-hosted Minecraft server infrastructure on Hetzner Cloud (Debian 12, Docker Compose).
+Self-hosted Minecraft server infrastructure on Hetzner Cloud (Debian 13, Docker Compose).
 
 ## What This Is
 
@@ -10,7 +10,7 @@ The existing "N19 Server" on WiseHosting is separate and not managed here.
 
 ## Architecture
 
-- **Host**: Hetzner Cloud CAX21 (ARM, Debian 12)
+- **Host**: Hetzner Cloud CAX21 (ARM, Debian 13 Trixie)
 - **MC servers**: `itzg/minecraft-server` containers (Fabric, vanilla, etc.)
 - **Routing**: `itzg/mc-router` routes by subdomain on port 25565
 - **Web**: Nginx reverse proxy for BlueMap UIs, SSL via Let's Encrypt wildcard for `*.mc.danny.is`
@@ -52,6 +52,14 @@ All scripts live in `shared/scripts/` and are symlinked into PATH during setup.
 | `mc-console <server>` | Attach to server console (RCON) |
 | `mc-backup <server>` | Trigger an immediate backup |
 | `mc-update-mods <modpack>` | Check for and apply mod updates |
+
+## Players
+
+| Player | Minecraft UUID |
+|--------|---------------|
+| Danny | `d2683803` |
+
+Used for `OPS` and `WHITELIST` env vars in server configs.
 
 ## Conventions
 

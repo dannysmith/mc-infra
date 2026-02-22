@@ -1,0 +1,2 @@
+# Per-server environment overrides for the creative server
+# All core config is in docker-compose.yml for now
