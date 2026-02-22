@@ -9,6 +9,7 @@ shared/modpacks/*/mods/*.jar
 
 # Resolved secrets (only .env.tpl is tracked)
 .env
+!.env.tpl
 .secrets/
 
 # OS / editor
