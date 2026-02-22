@@ -12,11 +12,11 @@ services:
       MODRINTH_PROJECTS: |
         fabric-api
         lithium
-        ferritecore
+        ferrite-core
         noisium
         scalablelux
         c2me-fabric
-        distant-horizons
+        distanthorizons
         bluemap
         simple-voice-chat
       WHITELIST_ENABLED: "true"
