@@ -9,47 +9,29 @@ Get a working VPS with a single Minecraft server connectable from a local client
 - ~~Create a CAX21 (ARM, 4 vCPU, 8GB RAM, 80GB SSD) in Helsinki (hel1-dc2)~~ DONE
 - ~~Debian 13 (Trixie) image~~ DONE
 - ~~Add SSH key during provisioning~~ DONE
-- Add SSH key during provisioning
 - **Do not upgrade the disk during any future rescale operations** (see requirements.md section 1)
 
 ### 2. Write `setup.sh`
 
-Idempotent script that configures a fresh Debian 12 box. Should handle:
-
-- Create non-root user with sudo (if not done by Hetzner's provisioning)
-- SSH hardening: disable password auth, disable root login
-- Install and configure UFW: allow SSH (22), MC (25565), HTTP/HTTPS (80/443), SVC UDP (24454)
-- Install and configure fail2ban for SSH
-- Enable unattended-upgrades for automatic security patches
-- Set timezone to UTC
-- Install Docker Engine + Docker Compose (from Docker's official repo)
-- Install Nginx
-- Install certbot + certbot-dns-dnsimple plugin
-- Install dev tools: uv, bun, JDK 21, gh, Claude Code
-- Install 1Password CLI (`op`)
-- Install standard utilities: curl, wget, jq, htop, tmux
-- Create directory structure under `/opt/minecraft/` (or wherever the repo is cloned)
-- Symlink management scripts from `shared/scripts/` into PATH
+~~Idempotent script that configures a fresh Debian 13 box.~~ DONE
 
 ### 3. Run `setup.sh` on the VPS
 
-- Clone the repo onto the server
-- Run the setup script
-- Verify: SSH key-only, firewall active, Docker running, all tools installed
+~~Run the setup script, verify: SSH key-only, firewall active, Docker running, all tools installed.~~ DONE
 
 ### 4. Configure secrets
 
-- Create "MC Server" vault in 1Password
-- Create a service account scoped to that vault
-- Install service account token on VPS (`OP_SERVICE_ACCOUNT_TOKEN`)
+- ~~Create "MC Server" vault in 1Password~~ DONE
+- ~~Create a service account scoped to that vault~~ DONE
+- ~~Install service account token on VPS (`OP_SERVICE_ACCOUNT_TOKEN`)~~ DONE
 - Store initial secrets: DNSimple API token, RCON password
-- Transfer Claude Code `auth.json` from local machine
+- ~~Authenticate Claude Code on VPS via `claude login`~~ DONE
 - Set up `GH_TOKEN` via 1Password
 
 ### 5. DNS
 
-- Create `mc.danny.is` A record pointing to VPS IP (via DNSimple)
-- Create wildcard `*.mc.danny.is` A record pointing to VPS IP
+- ~~Create `mc.danny.is` A record pointing to VPS IP (via DNSimple)~~ DONE
+- ~~Create wildcard `*.mc.danny.is` A record pointing to VPS IP~~ DONE
 - Verify DNS resolution
 
 ### 6. First MC server

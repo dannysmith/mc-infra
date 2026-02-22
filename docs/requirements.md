@@ -142,7 +142,7 @@ All other ports blocked by default. Internal Docker networking handles container
 
 ### Secrets Management: 1Password
 
-All secrets managed via **1Password** with the `op` CLI. Secrets are fetched at runtime and never stored on disk (except Claude Code's `auth.json` — see below).
+All secrets managed via **1Password** with the `op` CLI. Secrets are fetched at runtime and never stored on disk.
 
 **Setup:**
 1. Create a **"MC Server"** vault in 1Password
@@ -162,7 +162,7 @@ See [vps-auth-research.md](./vps-auth-research.md) for full background research.
 
 ### CLI Authentication
 
-**Claude Code (Max plan)**: Authenticate locally with `claude /login`, then transfer `~/.config/claude-code/auth.json` to the VPS via `scp`. This uses the Max subscription (no API charges). The token is not machine-bound but may expire periodically, requiring re-transfer. This is the one credential that must live on disk as a file — everything else goes through `op`.
+**Claude Code (Max plan)**: Run `claude login` directly on the VPS. It provides a URL to open in a local browser for OAuth authentication. No file transfer needed.
 
 **GitHub CLI**: Fine-grained PAT stored in 1Password, injected via `op run` into `GH_TOKEN`. Scope to only needed repos, set 90-day expiry.
 
