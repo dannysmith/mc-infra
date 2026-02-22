@@ -1,0 +1,17 @@
+# World data (huge, backed up separately)
+servers/*/data/
+
+# Local backups
+shared/backups/
+
+# Mod JARs (downloaded by scripts from manifests)
+shared/modpacks/*/mods/*.jar
+
+# Resolved secrets (only .env.tpl is tracked)
+.env
+.secrets/
+
+# OS / editor
+.DS_Store
+*.swp
+*~
