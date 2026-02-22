@@ -9,6 +9,7 @@ services:
       TYPE: FABRIC
       VERSION: LATEST
       MEMORY: 4G
+      MODRINTH_ALLOWED_VERSION_TYPE: beta
       MODRINTH_PROJECTS: |
         fabric-api
         lithium
