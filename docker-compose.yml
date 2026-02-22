@@ -1,4 +1,17 @@
 services:
+  mc-router:
+    image: itzg/mc-router
+    container_name: mc-router
+    ports:
+      - "25565:25565"
+    environment:
+      MAPPING: |
+        creative.mc.danny.is=creative:25565
+        test.mc.danny.is=test:25565
+    networks:
+      - minecraft-net
+    restart: unless-stopped
+
   creative:
     image: itzg/minecraft-server
     container_name: creative
@@ -29,8 +42,8 @@ services:
       RCON_PASSWORD: ${RCON_PASSWORD}
       ENABLE_COMMAND_BLOCK: "true"
     ports:
-      - "25565:25565"
       - "24454:24454/udp"
+      - "127.0.0.1:8100:8100"
     volumes:
       - ./servers/creative/data:/data
     networks:
@@ -40,6 +53,30 @@ services:
         limits:
           memory: 5g
           cpus: "2.0"
+    restart: unless-stopped
+
+  test:
+    image: itzg/minecraft-server
+    container_name: test
+    environment:
+      EULA: "TRUE"
+      VERSION: LATEST
+      MEMORY: 1G
+      WHITELIST_ENABLED: "true"
+      ENFORCE_WHITELIST: "true"
+      OPS: d2683803
+      WHITELIST: d2683803
+      MOTD: "Test Server"
+      RCON_PASSWORD: ${RCON_PASSWORD}
+    volumes:
+      - ./servers/test/data:/data
+    networks:
+      - minecraft-net
+    deploy:
+      resources:
+        limits:
+          memory: 1536m
+          cpus: "1.0"
     restart: unless-stopped
 
 networks:

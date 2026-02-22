@@ -57,7 +57,7 @@ All scripts live in `shared/scripts/` and are symlinked into PATH during setup.
 
 | Player | Minecraft UUID |
 |--------|---------------|
-| Danny | `d2683803` |
+| Danny | `d2683803` (`ee7ca56d-5238-4226-89a3-9db69f2800f5`) |
 
 Used for `OPS` and `WHITELIST` env vars in server configs.
 
