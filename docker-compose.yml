@@ -72,14 +72,21 @@ services:
     container_name: test
     environment:
       EULA: "TRUE"
+      TYPE: FABRIC
       VERSION: LATEST
-      MEMORY: 1G
+      MEMORY: 2G
+      MODRINTH_PROJECTS: |
+        fabric-api
+        bluemap
+      SEED: "-4172144997902289642"
       WHITELIST_ENABLED: "true"
       ENFORCE_WHITELIST: "true"
       OPS: d2683803
       WHITELIST: d2683803
       MOTD: "Test Server"
       RCON_PASSWORD: ${RCON_PASSWORD}
+    ports:
+      - "127.0.0.1:8101:8100"
     volumes:
       - ./servers/test/data:/data
     networks:
@@ -87,7 +94,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 1536m
+          memory: 2560m
           cpus: "1.0"
     restart: unless-stopped
 
