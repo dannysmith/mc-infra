@@ -1,4 +1,16 @@
 services:
+  acme-dns:
+    image: joohoi/acme-dns
+    container_name: acme-dns
+    ports:
+      - "53:53"
+      - "53:53/udp"
+      - "127.0.0.1:8053:80"
+    volumes:
+      - ./acme-dns/config:/etc/acme-dns:ro
+      - ./acme-dns/data:/var/lib/acme-dns
+    restart: unless-stopped
+
   mc-router:
     image: itzg/mc-router
     container_name: mc-router
