@@ -176,3 +176,39 @@ Nothing. The wildcard A record (`*.mc.danny.is`) already covers all subdomains.
 ### 4. SSL
 
 Nothing. The wildcard cert (`*.mc.danny.is`) already covers all subdomains.
+
+## If the VPS IP Changes
+
+Update the A record in `acme-dns/config/config.cfg`:
+
+```ini
+records = [
+    "acme.mc.danny.is. A <new-ip>",
+    ...
+```
+
+Then update DNS A records in DNSimple (via UI):
+- `mc.danny.is` → new IP
+- `*.mc.danny.is` → new IP
+- `acme.mc.danny.is` → new IP
+
+Restart acme-dns and verify: `docker compose restart acme-dns`
+
+Also update `docs/server-details.md` with the new IP.
+
+## If the Domain Changes
+
+If moving from `mc.danny.is` to a different domain, update these files:
+
+| File | What to change |
+|------|---------------|
+| `acme-dns/config/config.cfg` | `domain`, `nsname`, `nsadmin`, `records` |
+| `docker-compose.yml` | mc-router `MAPPING` hostnames |
+| `nginx/conf.d/bluemap.conf` | `server_name` directives |
+| `nginx/conf.d/ssl.conf` | Certificate paths |
+| `setup-ssl.sh` | `DOMAIN` variable |
+
+You'll also need to:
+1. Set up new DNS records (A, NS, CNAME, CAA) for the new domain
+2. Re-register with acme-dns (`setup-ssl.sh` handles this)
+3. Obtain a new wildcard cert for the new domain
