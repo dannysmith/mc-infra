@@ -136,16 +136,14 @@ usermod -aG docker danny
 
 echo "==> Installing external tools..."
 
-# --- certbot + dns-dnsimple plugin (via pipx) ---
-# certbot installed via pipx (not apt) so we can inject the dnsimple plugin,
-# which is not available in Debian repos.
+# --- certbot (via pipx) ---
 if ! command -v certbot &>/dev/null; then
   echo "    Installing certbot via pipx..."
   pipx install certbot
+  echo "    certbot installed"
+else
+  echo "    certbot already installed"
 fi
-echo "    Injecting certbot-dns-dnsimple..."
-pipx inject certbot certbot-dns-dnsimple
-echo "    certbot + dns-dnsimple installed"
 
 # --- 1Password CLI ---
 if ! command -v op &>/dev/null; then
@@ -224,6 +222,7 @@ fi
 
 echo "==> Configuring UFW..."
 ufw allow 22/tcp    # SSH
+ufw allow 53        # DNS (acme-dns for ACME challenges)
 ufw allow 80/tcp    # HTTP
 ufw allow 443/tcp   # HTTPS
 ufw allow 25565/tcp # Minecraft
@@ -263,7 +262,56 @@ systemctl restart unattended-upgrades
 echo "    Unattended-upgrades configured"
 
 # ---------------------------------------------------------------------------
-# 11. Summary
+# 11. Configure Nginx for mc-infra
+# ---------------------------------------------------------------------------
+
+echo "==> Configuring Nginx..."
+NGINX_CONF="/etc/nginx/nginx.conf"
+MC_INCLUDE="include /opt/minecraft/nginx/conf.d/*.conf;"
+if ! grep -q "/opt/minecraft/nginx" "$NGINX_CONF"; then
+  # Add our include line after the existing conf.d include
+  sed -i "/include \/etc\/nginx\/conf.d\/\*.conf;/a\\        $MC_INCLUDE" "$NGINX_CONF"
+  echo "    Added mc-infra include to nginx.conf"
+else
+  echo "    mc-infra include already in nginx.conf"
+fi
+
+# ---------------------------------------------------------------------------
+# 12. Install certbot hook for acme-dns
+# ---------------------------------------------------------------------------
+
+echo "==> Installing certbot acme-dns hook..."
+HOOK_SCRIPT="/etc/letsencrypt/acme-dns-auth.py"
+if [[ ! -f "$HOOK_SCRIPT" ]]; then
+  mkdir -p /etc/letsencrypt
+  curl -fsSL -o "$HOOK_SCRIPT" \
+    https://raw.githubusercontent.com/joohoi/acme-dns-certbot-joohoi/master/acme-dns-auth.py
+  # Fix shebang for Debian (no 'python' binary, only 'python3')
+  sed -i '1s|#!/usr/bin/env python$|#!/usr/bin/env python3|' "$HOOK_SCRIPT"
+  # Point at local acme-dns instance
+  sed -i 's|ACMEDNS_URL = "https://auth.acme-dns.io"|ACMEDNS_URL = "http://127.0.0.1:8053"|' "$HOOK_SCRIPT"
+  chmod 0700 "$HOOK_SCRIPT"
+  echo "    Installed acme-dns-auth.py"
+else
+  echo "    acme-dns-auth.py already installed"
+fi
+
+# Nginx reload hook for cert renewals
+RENEWAL_HOOK="/etc/letsencrypt/renewal-hooks/post/reload-nginx.sh"
+if [[ ! -f "$RENEWAL_HOOK" ]]; then
+  mkdir -p /etc/letsencrypt/renewal-hooks/post
+  cat > "$RENEWAL_HOOK" <<'HOOKEOF'
+#!/bin/bash
+systemctl reload nginx
+HOOKEOF
+  chmod +x "$RENEWAL_HOOK"
+  echo "    Installed Nginx renewal hook"
+else
+  echo "    Nginx renewal hook already installed"
+fi
+
+# ---------------------------------------------------------------------------
+# 13. Summary
 # ---------------------------------------------------------------------------
 
 echo ""
@@ -292,5 +340,10 @@ echo "     ssh danny@$(hostname -I | awk '{print $1}')"
 echo "  2. Set up 1Password service account token"
 echo "  3. Transfer Claude Code auth.json:"
 echo "     scp ~/.config/claude-code/auth.json danny@<ip>:~/.config/claude-code/"
-echo "  4. Configure DNS (mc.danny.is → $(hostname -I | awk '{print $1}'))"
+echo "  4. If VPS IP changed, update DNS A records in DNSimple:"
+echo "     mc.danny.is, *.mc.danny.is, acme.mc.danny.is → $(hostname -I | awk '{print $1}')"
+echo "  5. Start the stack (as danny):"
+echo "     cd /opt/minecraft && op run --env-file=.env.tpl -- docker compose up -d"
+echo "  6. Set up SSL certificate (as danny):"
+echo "     sudo /opt/minecraft/setup-ssl.sh"
 echo ""

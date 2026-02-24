@@ -5,28 +5,40 @@ Self-hosted Minecraft server infrastructure on Hetzner Cloud. Runs alongside the
 ## Quick Start
 
 ```bash
-# 1. Provision a Hetzner CAX21 (Debian 12) via Cloud Console
+# 1. Provision a Hetzner CAX21 (Debian 13) via Cloud Console
 # 2. Clone this repo onto the server
-git clone git@github.com:danny/mc-infra.git /opt/minecraft
-# 3. Run the setup script
+git clone git@github.com:dannysmith/mc-infra.git /opt/minecraft
+# 3. Run the setup script (as root)
 sudo /opt/minecraft/setup.sh
 # 4. Configure 1Password service account (see docs/requirements.md, section 4)
-# 5. Start the stack
-cd /opt/minecraft && docker compose up -d
+# 5. If VPS IP changed, update A records in DNSimple:
+#    mc.danny.is, *.mc.danny.is, acme.mc.danny.is → <new-ip>
+# 6. Start the stack (as danny)
+cd /opt/minecraft && op run --env-file=.env.tpl -- docker compose up -d
+# 7. Set up SSL certificate
+sudo /opt/minecraft/setup-ssl.sh
+# 8. Transfer Claude Code auth.json
+scp ~/.config/claude-code/auth.json danny@<ip>:~/.config/claude-code/
 ```
+
+Step 7 is interactive on first run — it registers with acme-dns and asks you to add a CNAME in DNSimple. On subsequent runs (re-provisioning with existing acme-dns data), it skips registration and just renews the cert.
 
 ## Structure
 
 ```
 setup.sh                 # Host provisioning (run once on fresh Debian box)
-docker-compose.yml       # All MC servers, mc-router, backup sidecars
+setup-ssl.sh             # SSL cert setup via acme-dns (interactive on first run)
+docker-compose.yml       # All services: acme-dns, mc-router, MC servers
 .env.tpl                 # 1Password secret references for `op run`
 servers/<name>/env       # Per-server environment overrides
+acme-dns/
+  Dockerfile             # Builds acme-dns from source (ARM-compatible)
+  config/config.cfg      # acme-dns configuration
+nginx/conf.d/            # Nginx reverse proxy + SSL configs
 shared/
   modpacks/              # Mod collections (manifests + configs)
   scripts/               # mc-create, mc-status, etc.
   templates/             # Server templates
-nginx/conf.d/            # Reverse proxy configs for BlueMap
 docs/                    # Requirements, research, reference
 ```
 
@@ -46,12 +58,16 @@ mc-backup <name>
 Servers: `<name>.mc.danny.is` (port 25565 via mc-router)
 Maps: `map-<name>.mc.danny.is` (HTTPS via Nginx)
 
+See [DNS, Routing & SSL](docs/dns-and-routing.md) for the full architecture reference.
+
 ## Tasks
 
 Pending tasks in [`docs/tasks-todo/`](docs/tasks-todo/). Completed tasks moved to [`docs/tasks-done/`](docs/tasks-done/) with date prefix.
 
 ## Docs
 
+- [DNS, Routing & SSL](docs/dns-and-routing.md)
 - [Requirements & Plan](docs/requirements.md)
+- [Server Details](docs/server-details.md)
 - [Hosting Research](docs/minecraft-hosting-research.md)
 - [Auth & Secrets Research](docs/vps-auth-research.md)

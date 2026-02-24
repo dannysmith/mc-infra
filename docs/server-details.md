@@ -26,12 +26,7 @@
 
 ### DNS
 
-Managed via DNSimple on the `danny.is` domain.
-
-| Record          | Type | Value         |
-| --------------- | ---- | ------------- |
-| `mc.danny.is`   | A    | 89.167.86.134 |
-| `*.mc.danny.is` | A    | 89.167.86.134 |
+Managed via DNSimple on the `danny.is` domain. See `docs/dns-and-routing.md` for the full DNS, routing, and SSL reference.
 
 Servers are addressed as `<name>.mc.danny.is` (e.g. `creative.mc.danny.is`). BlueMap UIs as `map-<name>.mc.danny.is`.
 
@@ -65,8 +60,8 @@ Secrets are referenced in `.env.tpl` using `op://MC Server/...` URIs and injecte
 **Infrastructure:**
 - Docker Engine + Docker Compose (from Docker's official Debian repo)
 - Nginx (reverse proxy for BlueMap UIs, SSL termination)
-- certbot + certbot-dns-dnsimple (via pipx, for `*.mc.danny.is` wildcard certs)
-- UFW (firewall — ports 22, 80, 443, 25565/tcp, 24454/udp)
+- certbot (via pipx) + self-hosted acme-dns for `*.mc.danny.is` wildcard cert renewal
+- UFW (firewall — ports 22, 53, 80, 443, 25565/tcp, 24454/udp)
 - fail2ban (SSH brute-force protection)
 - unattended-upgrades (automatic security patches)
 - 1Password CLI (`op`)
