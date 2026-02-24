@@ -1,6 +1,6 @@
 services:
   acme-dns:
-    image: joohoi/acme-dns
+    image: acme-dns-local
     container_name: acme-dns
     ports:
       - "53:53"
