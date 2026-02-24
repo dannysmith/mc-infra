@@ -1,0 +1,22 @@
+FROM golang:alpine AS builder
+
+RUN apk add --update git gcc musl-dev
+
+ENV GOPATH /tmp/buildcache
+RUN git clone https://github.com/joohoi/acme-dns /tmp/acme-dns
+WORKDIR /tmp/acme-dns
+RUN go build
+
+FROM alpine:latest
+
+WORKDIR /root/
+COPY --from=builder /tmp/acme-dns .
+RUN mkdir -p /etc/acme-dns
+RUN mkdir -p /var/lib/acme-dns
+RUN rm -rf ./config.cfg
+RUN apk --no-cache add ca-certificates && update-ca-certificates
+
+VOLUME ["/etc/acme-dns", "/var/lib/acme-dns"]
+ENTRYPOINT ["./acme-dns"]
+EXPOSE 53 80 443
+EXPOSE 53/udp
