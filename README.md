@@ -67,7 +67,6 @@ Pending tasks in [`docs/tasks-todo/`](docs/tasks-todo/). Completed tasks moved t
 ## Docs
 
 - [DNS, Routing & SSL](docs/dns-and-routing.md)
-- [Requirements & Plan](docs/requirements.md)
 - [Server Details](docs/server-details.md)
-- [Hosting Research](docs/minecraft-hosting-research.md)
-- [Auth & Secrets Research](docs/vps-auth-research.md)
+
+Older planning and research docs are in [`docs/archive/`](docs/archive/).
