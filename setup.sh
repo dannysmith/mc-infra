@@ -311,7 +311,15 @@ else
 fi
 
 # ---------------------------------------------------------------------------
-# 13. Summary
+# 13. Configure bash environment
+# ---------------------------------------------------------------------------
+
+echo "==> Configuring bash environment for danny..."
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+bash "$SCRIPT_DIR/configure-bash.sh" danny
+
+# ---------------------------------------------------------------------------
+# 14. Summary
 # ---------------------------------------------------------------------------
 
 echo ""
@@ -327,12 +335,23 @@ echo "  - Java:            $(java --version 2>&1 | head -1 || echo 'check manual
 echo "  - 1Password CLI:   $(op --version 2>/dev/null || echo 'check manually')"
 echo "  - GitHub CLI:      $(gh --version 2>/dev/null | head -1 || echo 'check manually')"
 echo "  - certbot:         $(certbot --version 2>/dev/null || echo 'check manually')"
-echo "  - fail2ban:        $(systemctl is-active fail2ban 2>/dev/null)"
-echo "  - UFW:             $(ufw status | head -1)"
-echo "  - Timezone:        $(timedatectl show -p Timezone --value)"
 echo ""
 echo "User-level tools (installed for danny):"
-echo "  - Bun, uv, Claude Code — verify by logging in as danny"
+echo "  - Bun:             $(sudo -iu danny bash -c 'bun --version' 2>/dev/null || echo 'check manually')"
+echo "  - uv:              $(sudo -iu danny bash -c 'uv --version' 2>/dev/null || echo 'check manually')"
+echo "  - Claude Code:     $(sudo -iu danny bash -c 'claude --version' 2>/dev/null || echo 'check manually')"
+echo ""
+echo "Security:"
+echo "  - SSH:             root login disabled, password auth disabled"
+echo "  - UFW:             $(ufw status | head -1)"
+echo "  - fail2ban:        $(systemctl is-active fail2ban 2>/dev/null)"
+echo "  - Unattended upgrades: $(systemctl is-active unattended-upgrades 2>/dev/null)"
+echo ""
+echo "Configuration:"
+echo "  - Timezone:        $(timedatectl show -p Timezone --value)"
+echo "  - Nginx:           mc-infra include added"
+echo "  - Certbot:         acme-dns hook + nginx renewal hook installed"
+echo "  - Bash:            colored prompt, git branch, Ghostty TERM support"
 echo ""
 echo "⚠  NEXT STEPS:"
 echo "  1. TEST SSH as danny before closing this root session:"
