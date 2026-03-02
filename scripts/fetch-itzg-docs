@@ -78,7 +78,9 @@ def gather_entries(docs_dir: Path) -> list[Entry]:
             for f in files:
                 entries.append(("file", f))
         else:
-            has_index = files and files[0].name == "index.md"
+            # Only count index.md as a section index if it's a direct child
+            # (e.g. types-and-platforms/index.md, not misc/deployment/index.md)
+            has_index = files and files[0].name == "index.md" and len(files[0].parts) == 2
             if has_index:
                 # Section heading + index content merged together
                 entries.append(("section_content", files[0]))
@@ -99,26 +101,29 @@ def gather_entries(docs_dir: Path) -> list[Entry]:
     return entries
 
 
-def toc_depth(entry_kind: str, value) -> int:
-    """Determine TOC indentation depth for an entry."""
-    if entry_kind in ("section", "section_content"):
-        return 0
-    # For files, depth relative to their top-level section
-    rel = value
-    parts = [p for p in rel.parent.parts if p != "."]
-    # Files directly in a top-level section dir are depth 0 in TOC (indented once under section)
-    return max(0, len(parts) - 1)
+def toc_indent(rel_path: Path, is_root_section: bool) -> str:
+    """Determine TOC indentation for a file entry."""
+    parts = [p for p in rel_path.parent.parts if p != "."]
+    if is_root_section:
+        # Root files (no section parent) — flush left
+        return ""
+    # Files in sections: 1 level for being in a section, +1 per subdirectory depth
+    depth = len(parts)  # e.g. configuration/foo.md = 1, misc/autopause-autostop/x.md = 2
+    return "  " * depth
 
 
 def build_toc(entries: list[Entry]) -> str:
     """Build a markdown table of contents."""
     lines = []
+    in_root = True  # Track whether we're in the root section (no header)
     for kind, value in entries:
         if kind == "section":
+            in_root = False
             title = slug_to_title(value)
             anchor = title.lower().replace(" ", "-")
             lines.append(f"- [{title}](#{anchor})")
         elif kind == "section_content":
+            in_root = False
             title = heading_for_file(value)
             anchor = title.lower().replace(" ", "-")
             lines.append(f"- [{title}](#{anchor})")
@@ -126,7 +131,7 @@ def build_toc(entries: list[Entry]) -> str:
             rel = value
             title = heading_for_file(rel)
             anchor = title.lower().replace(" ", "-").replace("/", "")
-            indent = "  " * (toc_depth(kind, value) + 1)
+            indent = toc_indent(rel, in_root)
             lines.append(f"{indent}- [{title}](#{anchor})")
     return "\n".join(lines)
 

@@ -16,7 +16,7 @@ shared/mods/*.jar
 .secrets/
 
 # Generated reference docs (regenerate with scripts/fetch-itzg-docs)
-docs/reference/
+docs/reference/itzg-docker-minecraft-server.md
 
 # Python venv (local dev only)
 .venv/
