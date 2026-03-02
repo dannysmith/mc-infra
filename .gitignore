@@ -15,6 +15,9 @@ shared/mods/*.jar
 !.env.tpl
 .secrets/
 
+# Generated reference docs (regenerate with scripts/fetch-itzg-docs)
+docs/reference/
+
 # Python venv (local dev only)
 .venv/
 __pycache__/

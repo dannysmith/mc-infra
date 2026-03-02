@@ -402,8 +402,16 @@ mc-create --name n19-copy --world ./N19-world.zip
 mc-create --name creative-v2 --world-from creative
 ```
 
-- `--world <path-or-url>` — extract archive into `servers/<name>/data/` before first start. The itzg container's `WORLD` env var could also handle this, but pre-extracting gives more control.
-- `--world-from <server>` — copy `servers/<source>/data/world/` to the new server. Source server should be stopped (or at minimum, a save-all issued via RCON first).
+**Research notes:**
+
+- Vanilla/Fabric worlds are structurally identical between singleplayer and server (same `level.dat`, `region/`, `DIM-1/`, `DIM1/`, etc.)
+- Bukkit/Paper/Spigot splits dimensions into separate top-level folders (`world/`, `world_nether/`, `world_the_end/`). We don't handle this — if importing from Paper to Fabric, the user should restructure the zip manually first. (In practice, Paper-to-Paper imports won't need this.)
+- The itzg image has a built-in `WORLD` env var that accepts a URL or local path to a ZIP/tar.gz. It searches the archive for `level.dat`, extracts the containing directory as the world. Supports `WORLD_INDEX` if multiple `level.dat` files exist. Only runs when data volume is empty (first start).
+
+**Approach: delegate to itzg `WORLD` env var rather than custom extraction code.**
+
+- `--world <path>` — mount the archive into the container and set `WORLD` env var pointing to it. Let itzg handle `level.dat` detection and extraction. For URLs, itzg handles download natively.
+- `--world-from <server>` — copy `servers/<source>/data/` contents to the new server's data dir. Source server should be stopped first. This is simple file ops, no archive handling needed.
 
 ---
 
@@ -437,7 +445,7 @@ mc-create --name creative-v2 --world-from creative
 
 ### Phase 3c
 - ✅ Can archive a server's world data before destroying
-- Can import worlds from files/URLs/other servers
+- ✅ Can import worlds from files/URLs/other servers (delegated to itzg WORLD env var)
 - ✅ Protection levels enforced on destroy and archive
 
 ---

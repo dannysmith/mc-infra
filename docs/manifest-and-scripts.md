@@ -122,6 +122,8 @@ mc-create --name <name> [options]
 | `--motd`          | `"<Name> Server"` | Server MOTD                                                |
 | `--no-bluemap`    | —                 | Disable BlueMap even if mods include it                    |
 | `--svc`           | —                 | Enable SVC port mapping (validates no other server has it) |
+| `--world`         | none              | Import world from local file or URL (uses itzg WORLD env)  |
+| `--world-from`    | none              | Copy world data from another server                        |
 
 Does NOT start the server. Review `servers/<name>/env` first, then `mc-start <name>`.
 
@@ -133,6 +135,19 @@ If BlueMap is enabled, the EULA is pre-accepted automatically (with a background
 mc-create --name survival --mode survival --tier semi-permanent --modrinth-mods bluemap,simple-voice-chat --svc
 # Review servers/survival/env, then:
 mc-start survival
+```
+
+**World import examples:**
+
+```bash
+# Import from a URL (itzg downloads on first start)
+mc-create --name n19-copy --world https://example.com/N19-world.zip
+
+# Import from a local file (copied into server dir, itzg extracts on first start)
+mc-create --name n19-copy --world ./N19-world.zip
+
+# Copy world data from an existing server (source should be stopped)
+mc-create --name creative-v2 --world-from creative
 ```
 
 ### mc-destroy

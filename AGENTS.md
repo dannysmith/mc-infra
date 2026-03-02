@@ -35,6 +35,10 @@ The existing "N19 Server" on WiseHosting is separate and not managed here.
 - `nginx/conf.d/` — Nginx reverse proxy and SSL configs
 - `docs/` — Reference docs (see `docs/manifest-and-scripts.md` for the manifest system, `docs/dns-and-routing.md` for routing/SSL)
 
+## Reference Docs
+
+- `docs/reference/itzg-docker-minecraft-server.md` — **Generated** full documentation for the `itzg/minecraft-server` Docker image. Regenerate with `scripts/fetch-itzg-docs`. Gitignored — run the script locally or on the server to create it. Use this as a comprehensive reference for all available environment variables, server types, mod/plugin configuration, and features.
+
 ## Task Management
 
 Tasks live in `docs/tasks-todo/` and `docs/tasks-done/`.

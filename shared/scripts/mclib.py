@@ -8,6 +8,7 @@ lives here. CLI scripts (mc-generate, mc-create, mc-destroy) are thin wrappers.
 import copy
 import os
 import re
+import shutil
 
 import yaml
 
@@ -138,6 +139,11 @@ def validate_server_name(name):
     return bool(SERVER_NAME_RE.match(name))
 
 
+def is_url(path):
+    """Check if a path is a URL (http/https)."""
+    return path.startswith('http://') or path.startswith('https://')
+
+
 # ---------------------------------------------------------------------------
 # Memory calculations
 # ---------------------------------------------------------------------------
@@ -262,8 +268,15 @@ def _build_mc_server(name, server, mod_groups, players):
         bm_port = config.get('bluemap_port', BLUEMAP_PORT_BASE)
         ports.append(QuotedStr(f'127.0.0.1:{bm_port}:8100'))
 
+    # World import
+    world = config.get('world')
+    if world:
+        env['WORLD'] = world
+
     # Volumes
     volumes = [f'./servers/{name}/data:/data']
+    if world and not is_url(world):
+        volumes.append(f'./servers/{name}/world-import:/world-import:ro')
     if config.get('jar_mods'):
         volumes.append('./shared/mods:/shared-mods:ro')
         env['MODS'] = ','.join(f'/shared-mods/{jar}' for jar in config['jar_mods'])
@@ -519,6 +532,40 @@ def check_archive_warnings(manifest, name):
             "system (Phase 4) instead of archiving."
         )
     return warnings
+
+
+# ---------------------------------------------------------------------------
+# World import
+# ---------------------------------------------------------------------------
+
+def setup_world_import(project_root, name, source_path):
+    """Copy a local world archive into servers/<name>/world-import/.
+
+    Returns the container-internal path (e.g. /world-import/my-world.zip).
+    """
+    if not os.path.exists(source_path):
+        raise ValueError(f"World file not found: {source_path}")
+
+    import_dir = os.path.join(project_root, 'servers', name, 'world-import')
+    os.makedirs(import_dir, exist_ok=True)
+
+    filename = os.path.basename(source_path)
+    shutil.copy2(source_path, os.path.join(import_dir, filename))
+
+    return f'/world-import/{filename}'
+
+
+def copy_world_from(project_root, source_name, dest_name):
+    """Copy a source server's data directory to a new server."""
+    src_data = os.path.join(project_root, 'servers', source_name, 'data')
+    if not os.path.isdir(src_data):
+        raise ValueError(f"No data directory for server '{source_name}'")
+
+    dest_data = os.path.join(project_root, 'servers', dest_name, 'data')
+    if os.path.isdir(dest_data) and os.listdir(dest_data):
+        raise ValueError(f"Server '{dest_name}' already has data")
+
+    shutil.copytree(src_data, dest_data)
 
 
 BLUEMAP_EULA_POLL_SCRIPT = '''\

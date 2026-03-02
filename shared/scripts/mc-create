@@ -44,6 +44,10 @@ def parse_args():
     p.add_argument('--motd', default=None, help='Server MOTD')
     p.add_argument('--no-bluemap', action='store_true', help='Disable BlueMap')
     p.add_argument('--svc', action='store_true', help='Enable Simple Voice Chat port')
+    p.add_argument('--world', default=None,
+                   help='World archive (local path or URL) — imported via itzg WORLD env var')
+    p.add_argument('--world-from', default=None,
+                   help='Copy world data from another server')
     return p.parse_args()
 
 
@@ -54,6 +58,15 @@ def main():
     template_path = os.path.join(root, 'shared', 'templates', 'server-env.template')
 
     manifest = mclib.load_manifest(manifest_path)
+
+    # Validate world import args
+    if args.world and args.world_from:
+        print("Error: cannot use both --world and --world-from", file=sys.stderr)
+        sys.exit(1)
+
+    if args.world_from and args.world_from not in manifest.get('servers', {}):
+        print(f"Error: source server '{args.world_from}' not found", file=sys.stderr)
+        sys.exit(1)
 
     # Build config from args
     config = {
@@ -74,6 +87,14 @@ def main():
     if args.no_bluemap:
         config['bluemap'] = False
 
+    # World import: URL goes straight into manifest; local file gets copied first
+    if args.world:
+        if mclib.is_url(args.world):
+            config['world'] = args.world
+        else:
+            container_path = mclib.setup_world_import(root, args.name, args.world)
+            config['world'] = container_path
+
     try:
         mclib.add_server(manifest, args.name, config)
     except ValueError as e:
@@ -89,6 +110,15 @@ def main():
 
     # Create server directory + env
     mclib.setup_server_dir(root, args.name, template_path)
+
+    # Copy world data from another server
+    if args.world_from:
+        try:
+            mclib.copy_world_from(root, args.world_from, args.name)
+            print(f"  World data copied from '{args.world_from}'")
+        except ValueError as e:
+            print(f"Error: {e}", file=sys.stderr)
+            sys.exit(1)
 
     # BlueMap EULA auto-acceptance
     server = manifest['servers'][args.name]
@@ -111,6 +141,10 @@ def main():
     print(f"  Address:  {args.name}.mc.danny.is")
     if server.get('bluemap') is not False and server.get('bluemap_port'):
         print(f"  BlueMap:  https://map-{args.name}.mc.danny.is")
+    if server.get('world'):
+        print(f"  World:    imported via itzg WORLD env var on first start")
+    if args.world_from:
+        print(f"  World:    copied from '{args.world_from}'")
     print(f"  Env file: servers/{args.name}/env")
     print(f"\nNext steps:")
     print(f"  1. Review/edit servers/{args.name}/env")
