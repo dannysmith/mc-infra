@@ -7,10 +7,18 @@ shared/backups/
 # Mod JARs (downloaded by scripts from manifests)
 shared/modpacks/*/mods/*.jar
 
+# Shared mod JARs (non-Modrinth, dev builds, etc.)
+shared/mods/*.jar
+
 # Resolved secrets (only .env.tpl is tracked)
 .env
 !.env.tpl
 .secrets/
+
+# Python venv (local dev only)
+.venv/
+__pycache__/
+.pytest_cache/
 
 # OS / editor
 .DS_Store

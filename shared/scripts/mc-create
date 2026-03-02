@@ -1,0 +1,121 @@
+#!/usr/bin/env python3
+"""Create a new Minecraft server.
+
+Adds to manifest.yml, runs mc-generate, creates server directory and env file.
+Does NOT start the server — review servers/<name>/env first, then mc-start <name>.
+"""
+
+import argparse
+import os
+import subprocess
+import sys
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import mclib
+
+
+def find_project_root():
+    d = os.path.dirname(os.path.abspath(__file__))
+    while d != '/':
+        if os.path.exists(os.path.join(d, 'manifest.yml')):
+            return d
+        d = os.path.dirname(d)
+    print("Error: cannot find manifest.yml", file=sys.stderr)
+    sys.exit(1)
+
+
+def parse_args():
+    p = argparse.ArgumentParser(description='Create a new Minecraft server')
+    p.add_argument('--name', required=True, help='Server name (lowercase, hyphens ok)')
+    p.add_argument('--type', default='FABRIC', choices=['FABRIC', 'VANILLA', 'PAPER'])
+    p.add_argument('--version', default='LATEST', help='Minecraft version')
+    p.add_argument('--mod-group', action='append', default=None,
+                   help='Mod group (repeatable)')
+    p.add_argument('--modrinth-mods', default='',
+                   help='Modrinth slugs, comma-separated')
+    p.add_argument('--jar-mods', default='',
+                   help='Filenames from shared/mods/, comma-separated')
+    p.add_argument('--memory', default=None, help='Heap size (e.g. 2G, 4G)')
+    p.add_argument('--tier', default='ephemeral',
+                   choices=['ephemeral', 'semi-permanent', 'permanent'])
+    p.add_argument('--mode', default='creative',
+                   choices=['creative', 'survival', 'adventure', 'spectator'])
+    p.add_argument('--seed', default=None, help='World seed')
+    p.add_argument('--motd', default=None, help='Server MOTD')
+    p.add_argument('--no-bluemap', action='store_true', help='Disable BlueMap')
+    p.add_argument('--svc', action='store_true', help='Enable Simple Voice Chat port')
+    return p.parse_args()
+
+
+def main():
+    args = parse_args()
+    root = find_project_root()
+    manifest_path = os.path.join(root, 'manifest.yml')
+    template_path = os.path.join(root, 'shared', 'templates', 'server-env.template')
+
+    manifest = mclib.load_manifest(manifest_path)
+
+    # Build config from args
+    config = {
+        'type': args.type,
+        'version': args.version,
+        'mode': args.mode,
+        'tier': args.tier,
+        'mod_groups': args.mod_group if args.mod_group else ['fabric-base'],
+        'modrinth_mods': [m.strip() for m in args.modrinth_mods.split(',') if m.strip()],
+        'jar_mods': [m.strip() for m in args.jar_mods.split(',') if m.strip()],
+        'svc': args.svc,
+        'seed': args.seed,
+    }
+    if args.memory:
+        config['memory'] = args.memory
+    if args.motd:
+        config['motd'] = args.motd
+    if args.no_bluemap:
+        config['bluemap'] = False
+
+    try:
+        mclib.add_server(manifest, args.name, config)
+    except ValueError as e:
+        print(f"Error: {e}", file=sys.stderr)
+        sys.exit(1)
+
+    # Save manifest
+    mclib.save_manifest(manifest, manifest_path)
+
+    # Run mc-generate
+    generate_script = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'mc-generate')
+    subprocess.run([sys.executable, generate_script], check=True)
+
+    # Create server directory + env
+    mclib.setup_server_dir(root, args.name, template_path)
+
+    # BlueMap EULA auto-acceptance
+    server = manifest['servers'][args.name]
+    has_bluemap = server.get('bluemap', False)
+    if has_bluemap is not False:
+        mod_groups = manifest.get('mod_groups', {})
+        resolved = mclib.resolve_mods(server, mod_groups)
+        if has_bluemap is True or 'bluemap' in resolved:
+            mclib.setup_bluemap_eula(root, args.name)
+            # Also launch background poller in case BlueMap overwrites our pre-created config
+            poll_script = mclib.BLUEMAP_EULA_POLL_SCRIPT.format(name=args.name)
+            subprocess.Popen(
+                ['bash', '-c', poll_script],
+                cwd=root, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+            )
+            print("  BlueMap EULA pre-accepted (background poller running)")
+
+    # Summary
+    print(f"\nServer '{args.name}' created:")
+    print(f"  Address:  {args.name}.mc.danny.is")
+    if server.get('bluemap') is not False and server.get('bluemap_port'):
+        print(f"  BlueMap:  https://map-{args.name}.mc.danny.is")
+    print(f"  Env file: servers/{args.name}/env")
+    print(f"\nNext steps:")
+    print(f"  1. Review/edit servers/{args.name}/env")
+    print(f"  2. mc-start {args.name}")
+
+
+if __name__ == '__main__':
+    main()

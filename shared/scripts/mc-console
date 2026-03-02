@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+# Open an interactive RCON console for a Minecraft server.
+# Usage: mc-console <name>
+set -euo pipefail
+
+if [ $# -eq 0 ]; then
+  echo "Usage: mc-console <name>" >&2
+  exit 1
+fi
+
+docker exec -it "$1" rcon-cli

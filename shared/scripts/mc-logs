@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+# Tail logs for a Minecraft server.
+# Usage: mc-logs <name> [--follow] [-n LINES]
+set -euo pipefail
+
+if [ $# -eq 0 ]; then
+  echo "Usage: mc-logs <name> [--follow] [-n LINES]" >&2
+  exit 1
+fi
+
+cd /opt/minecraft
+
+name="$1"
+shift
+
+follow=""
+tail="100"
+
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --follow|-f) follow="--follow" ;;
+    -n) shift; tail="$1" ;;
+    *) echo "Unknown option: $1" >&2; exit 1 ;;
+  esac
+  shift
+done
+
+docker compose logs --tail "$tail" $follow "$name"

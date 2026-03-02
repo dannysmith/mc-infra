@@ -1,0 +1,107 @@
+#!/usr/bin/env python3
+"""Remove a Minecraft server.
+
+Removes from manifest, regenerates compose/nginx, cleans up server directory.
+Tier enforcement: ephemeral=immediate, semi-permanent=--confirm, permanent=refuses.
+"""
+
+import argparse
+import os
+import shutil
+import subprocess
+import sys
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import mclib
+
+
+def find_project_root():
+    d = os.path.dirname(os.path.abspath(__file__))
+    while d != '/':
+        if os.path.exists(os.path.join(d, 'manifest.yml')):
+            return d
+        d = os.path.dirname(d)
+    print("Error: cannot find manifest.yml", file=sys.stderr)
+    sys.exit(1)
+
+
+def main():
+    p = argparse.ArgumentParser(description='Remove a Minecraft server')
+    p.add_argument('name', help='Server name')
+    p.add_argument('--confirm', action='store_true',
+                   help='Confirm destruction of semi-permanent server')
+    p.add_argument('--force', action='store_true',
+                   help='Force destruction (even for permanent tier)')
+    args = p.parse_args()
+
+    root = find_project_root()
+    manifest_path = os.path.join(root, 'manifest.yml')
+    manifest = mclib.load_manifest(manifest_path)
+
+    # Check server exists and get info before removal
+    if args.name not in manifest['servers']:
+        print(f"Error: server '{args.name}' not found", file=sys.stderr)
+        sys.exit(1)
+
+    server = manifest['servers'][args.name]
+    has_bluemap = server.get('bluemap', False)
+
+    # Stop the server if docker is available
+    try:
+        subprocess.run(
+            ['docker', 'compose', 'stop', args.name],
+            capture_output=True, cwd=root,
+        )
+    except FileNotFoundError:
+        pass
+
+    # Remove from manifest (with tier checks)
+    try:
+        mclib.remove_server(manifest, args.name,
+                            confirm=args.confirm, force=args.force)
+    except ValueError as e:
+        print(f"Error: {e}", file=sys.stderr)
+        sys.exit(1)
+
+    # Save manifest and regenerate
+    mclib.save_manifest(manifest, manifest_path)
+
+    generate_script = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'mc-generate')
+    subprocess.run([sys.executable, generate_script], check=True)
+
+    # Remove stopped container
+    try:
+        subprocess.run(
+            ['docker', 'compose', 'rm', '-f', args.name],
+            capture_output=True, cwd=root,
+        )
+    except FileNotFoundError:
+        pass
+
+    # Recreate mc-router to drop old mapping
+    try:
+        subprocess.run(
+            ['docker', 'compose', 'up', '-d', 'mc-router'],
+            capture_output=True, cwd=root,
+        )
+    except FileNotFoundError:
+        pass
+
+    # Reload nginx if bluemap was enabled
+    if has_bluemap:
+        try:
+            subprocess.run(['nginx', '-s', 'reload'], capture_output=True)
+        except FileNotFoundError:
+            pass
+
+    # Remove server directory
+    server_dir = os.path.join(root, 'servers', args.name)
+    if os.path.exists(server_dir):
+        shutil.rmtree(server_dir)
+        print(f"  Removed {server_dir}")
+
+    print(f"Server '{args.name}' destroyed.")
+
+
+if __name__ == '__main__':
+    main()

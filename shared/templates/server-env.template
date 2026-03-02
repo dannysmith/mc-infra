@@ -1,5 +1,5 @@
-# Minecraft settings for creative
-# Edit these, then restart: mc-stop creative && mc-start creative
+# Minecraft settings for {name}
+# Edit these, then restart: mc-stop {name} && mc-start {name}
 # Reference: https://docker-minecraft-server.readthedocs.io/en/latest/configuration/server-properties/
 #
 # NOTE: Settings managed by manifest.yml (mode, memory, type, version, seed,

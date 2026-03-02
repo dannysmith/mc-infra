@@ -1,0 +1,67 @@
+#!/usr/bin/env python3
+"""Generate docker-compose.yml and nginx/conf.d/bluemap.conf from manifest.yml.
+
+Can be run standalone (after manual manifest edits) or called internally
+by mc-create/mc-destroy.
+"""
+
+import os
+import subprocess
+import sys
+
+# Allow importing mclib from the same directory
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import mclib
+
+
+def find_project_root():
+    """Walk up from script location to find manifest.yml."""
+    d = os.path.dirname(os.path.abspath(__file__))
+    while d != '/':
+        if os.path.exists(os.path.join(d, 'manifest.yml')):
+            return d
+        d = os.path.dirname(d)
+    print("Error: cannot find manifest.yml", file=sys.stderr)
+    sys.exit(1)
+
+
+def main():
+    root = find_project_root()
+    manifest_path = os.path.join(root, 'manifest.yml')
+    compose_path = os.path.join(root, 'docker-compose.yml')
+    nginx_path = os.path.join(root, 'nginx', 'conf.d', 'bluemap.conf')
+
+    manifest = mclib.load_manifest(manifest_path)
+
+    # Generate compose
+    compose_content = mclib.generate_compose(manifest)
+    compose_tmp = compose_path + '.tmp'
+    with open(compose_tmp, 'w') as f:
+        f.write(compose_content)
+
+    # Validate with docker compose (if available)
+    try:
+        subprocess.run(
+            ['docker', 'compose', '-f', compose_tmp, 'config', '--quiet'],
+            check=True, capture_output=True, text=True,
+        )
+    except FileNotFoundError:
+        pass  # Docker not available (e.g. local dev), skip validation
+    except subprocess.CalledProcessError as e:
+        os.unlink(compose_tmp)
+        print(f"Error: generated compose is invalid:\n{e.stderr}",
+              file=sys.stderr)
+        sys.exit(1)
+
+    os.replace(compose_tmp, compose_path)
+    print(f"  Generated {compose_path}")
+
+    # Generate nginx config
+    nginx_content = mclib.generate_nginx(manifest)
+    with open(nginx_path, 'w') as f:
+        f.write(nginx_content)
+    print(f"  Generated {nginx_path}")
+
+
+if __name__ == '__main__':
+    main()

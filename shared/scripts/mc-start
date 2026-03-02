@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+# Start one or all MC servers (+ recreate mc-router for MAPPING changes).
+set -euo pipefail
+
+cd /opt/minecraft
+
+if [ $# -eq 0 ]; then
+  # Start all MC servers
+  op run --env-file=.env.tpl -- docker compose up -d
+else
+  op run --env-file=.env.tpl -- docker compose up -d "$1" mc-router
+fi

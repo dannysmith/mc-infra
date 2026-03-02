@@ -1,0 +1,46 @@
+players:
+  ops: [d2683803]
+  whitelist: [d2683803, Kam93]
+
+mod_groups:
+  fabric-base:
+    - fabric-api
+    - lithium
+    - ferrite-core
+    - c2me-fabric
+    - scalablelux
+    - noisium
+
+servers:
+  creative:
+    type: FABRIC
+    version: LATEST
+    mode: creative
+    memory: 4G
+    tier: permanent
+    mod_groups: [fabric-base]
+    modrinth_mods: [distanthorizons, bluemap, simple-voice-chat]
+    jar_mods: []
+    modrinth_version_type: beta
+    bluemap: true
+    bluemap_port: 8100
+    svc: true
+    seed: null
+    motd: "Creative Server"
+    created: 2026-02-22
+
+  test:
+    type: FABRIC
+    version: LATEST
+    mode: creative
+    memory: 2G
+    tier: ephemeral
+    mod_groups: [fabric-base]
+    modrinth_mods: [bluemap]
+    jar_mods: []
+    bluemap: true
+    bluemap_port: 8101
+    svc: false
+    seed: "-4172144997902289642"
+    motd: "Test Server"
+    created: 2026-02-22

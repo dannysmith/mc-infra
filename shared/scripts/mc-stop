@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+# Stop one or all MC servers.
+set -euo pipefail
+
+cd /opt/minecraft
+
+if [ $# -eq 0 ]; then
+  # Stop all MC servers (but not acme-dns or mc-router)
+  servers=$(docker compose ps --format '{{.Service}}' | grep -v -E '^(acme-dns|mc-router)$' || true)
+  if [ -n "$servers" ]; then
+    docker compose stop $servers
+  fi
+else
+  docker compose stop "$1"
+fi

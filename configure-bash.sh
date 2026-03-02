@@ -73,6 +73,9 @@ cat > "$BASH_ALIASES" <<'ALIASEOF'
 alias g='git'
 alias cdmc='cd /opt/minecraft'
 
+# MC management scripts on PATH
+export PATH="/opt/minecraft/shared/scripts:$PATH"
+
 # Git branch in prompt (requires git package)
 if [ -f /usr/lib/git-core/git-sh-prompt ]; then
   . /usr/lib/git-core/git-sh-prompt

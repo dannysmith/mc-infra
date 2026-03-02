@@ -94,6 +94,7 @@ apt-get install -y \
   unattended-upgrades apt-listchanges \
   nginx \
   pipx \
+  python3-yaml \
   openjdk-21-jdk-headless
 
 # Ensure pipx path is available for root (certbot will be installed here)
