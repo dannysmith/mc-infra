@@ -58,11 +58,12 @@ All scripts live in `shared/scripts/` and are symlinked into PATH during setup.
 
 ## Players
 
-| Player | Minecraft UUID |
-|--------|---------------|
-| Danny | `d2683803` (`ee7ca56d-5238-4226-89a3-9db69f2800f5`) |
+| Player | Username | UUID |
+|--------|----------|------|
+| Danny | `d2683803` | `ee7ca56d-5238-4226-89a3-9db69f2800f5` |
+| Cam | `Kam93` | `6476f3d3-13ca-4c7d-84b8-dab9c317184b` |
 
-Used for `OPS` and `WHITELIST` env vars in server configs.
+Danny is OP on all servers. Both players are whitelisted on all servers. Managed via `players` block in `manifest.yml`.
 
 ## Conventions
 

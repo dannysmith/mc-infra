@@ -1,6 +1,6 @@
 # Phase 3: Tooling
 
-Server manifest system, composable modpacks, and management scripts for rapid server creation/teardown.
+Server manifest system and management scripts for rapid server creation/teardown.
 
 ## Current State
 
@@ -23,7 +23,7 @@ The test server currently running is ephemeral — can be destroyed once tooling
 
 ### Manifest-Driven Server Management
 
-A **server manifest** (`manifest.yml`) is the single source of truth for all server definitions. A generator script (`mc-generate`) produces `docker-compose.yml` and `nginx/conf.d/bluemap.conf` from this manifest plus modpack definitions.
+A **server manifest** (`manifest.yml`) is the single source of truth for all server definitions. A generator script (`mc-generate`) produces `docker-compose.yml` and `nginx/conf.d/bluemap.conf` from this manifest.
 
 **Why:** Adding a server currently requires coordinated edits across 3-4 files. A manifest + generator ensures consistency and makes server creation scriptable.
 
@@ -32,23 +32,24 @@ A **server manifest** (`manifest.yml`) is the single source of truth for all ser
 - `nginx/conf.d/bluemap.conf` — server blocks for all BlueMap-enabled servers
 
 **What's user-editable (never generated over):**
-- `manifest.yml` — server definitions (edited by scripts or manually)
+- `manifest.yml` — server definitions and mod groups (edited by scripts or manually)
 - `servers/<name>/env` — per-server Minecraft settings (difficulty, view distance, command blocks, level type, etc.)
-- `shared/modpacks/<name>/manifest.yml` — modpack definitions
 
 **Workflow for MC-specific settings:** Since `docker-compose.yml` is generated, Minecraft settings like `VIEW_DISTANCE`, `DIFFICULTY`, `LEVEL_TYPE`, `GENERATOR_SETTINGS` etc. go in `servers/<name>/env` (which is referenced via `env_file:` in the generated compose). This keeps the generated compose clean and gives each server a dedicated settings file. The `env` file is pre-populated from a template with common options commented out for discoverability.
 
-### Composable Modpack System
+**Important: `environment:` overrides `env_file:`.** Settings in the generated compose `environment:` block (mode, memory, type, version, seed, motd, modrinth config) always take precedence over `servers/<name>/env`. To change these, edit `manifest.yml` and run `mc-generate`. The env file is for settings NOT managed by the manifest.
 
-Modpacks are defined as YAML manifests in `shared/modpacks/<name>/manifest.yml`. Each lists Modrinth project slugs and can **include** other modpacks for composition.
+### Mod System
 
-A server in the manifest can reference **multiple modpacks** plus additional **per-server mods**. The generator resolves all includes, deduplicates, and produces a single `MODRINTH_PROJECTS` list. This means mods are downloaded by the itzg container on startup (auto-cleanup of removed mods, auto-updates for unpinned versions).
+Three ways to get mods onto a server, all configurable per-server in `manifest.yml`:
 
-**Composition examples:**
-- `modpacks: [fabric-standard]` — gets all of fabric-standard (which includes fabric-base)
-- `modpacks: [fabric-base], extra_mods: [bluemap]` — perf mods + just BlueMap
-- `modpacks: [], extra_mods: [fabric-api, some-experimental-mod]` — fully custom, no shared packs
-- `modpacks: [fabric-standard, extra-fancy-pack]` — multiple packs combined
+**1. Mod groups** — named shorthand lists of Modrinth slugs, defined once at the top of `manifest.yml`. Avoids re-listing common mods for every server. Currently just one group (`fabric-base`), but more can be added.
+
+**2. Modrinth mods** — individual Modrinth project slugs listed per-server. Supports version pinning (`slug:version`).
+
+**3. JAR mods** — filenames from `shared/mods/`, a single flat directory of JAR files. Used for non-Modrinth mods, dev builds, specific versions, or mods you want to update in one place across servers. The directory is mounted read-only into containers that need it.
+
+The generator combines mod groups + modrinth mods into `MODRINTH_PROJECTS`, and JAR mods into volume mounts + the `MODS` env var.
 
 ### Scripts
 
@@ -59,14 +60,11 @@ A server in the manifest can reference **multiple modpacks** plus additional **p
 ### File Layout
 
 ```
-manifest.yml                          # Server definitions (source of truth)
+manifest.yml                          # Server definitions + mod groups (source of truth)
 docker-compose.yml                    # Generated — do not edit directly
 nginx/conf.d/bluemap.conf             # Generated — do not edit directly
 shared/
-  modpacks/
-    fabric-base/manifest.yml          # Core performance mods
-    fabric-standard/manifest.yml      # Full setup (includes fabric-base)
-    vanilla/manifest.yml              # No mods
+  mods/                               # Shared JAR files (dev builds, non-Modrinth mods, etc.)
   scripts/
     mc-create                         # Python — create server
     mc-destroy                        # Python — remove server
@@ -87,11 +85,24 @@ servers/
 
 ---
 
-## Manifest Formats
+## Manifest Format
 
-### Server Manifest (`manifest.yml`)
+### Full Example (`manifest.yml`)
 
 ```yaml
+players:
+  ops: [d2683803]
+  whitelist: [d2683803, Kam93]
+
+mod_groups:
+  fabric-base:
+    - fabric-api
+    - lithium
+    - ferrite-core
+    - c2me-fabric
+    - scalablelux
+    - noisium
+
 servers:
   creative:
     type: FABRIC
@@ -99,8 +110,9 @@ servers:
     mode: creative
     memory: 4G
     tier: permanent
-    modpacks: [fabric-standard]
-    extra_mods: []
+    mod_groups: [fabric-base]
+    modrinth_mods: [distanthorizons, bluemap, simple-voice-chat]
+    jar_mods: []
     modrinth_version_type: beta
     bluemap: true
     bluemap_port: 8100
@@ -115,8 +127,9 @@ servers:
     mode: creative
     memory: 2G
     tier: ephemeral
-    modpacks: [fabric-base]
-    extra_mods: [bluemap]
+    mod_groups: [fabric-base]
+    modrinth_mods: [bluemap]
+    jar_mods: []
     bluemap: true
     bluemap_port: 8101
     svc: false
@@ -125,7 +138,7 @@ servers:
     created: 2026-02-22
 ```
 
-**Fields:**
+### Server Fields
 
 | Field | Default | Description |
 |-------|---------|-------------|
@@ -134,8 +147,9 @@ servers:
 | `mode` | `creative` | Game mode: creative, survival, adventure, spectator |
 | `memory` | tier-based | Java heap size (e.g. `2G`, `4G`) |
 | `tier` | `ephemeral` | Protection level: ephemeral, semi-permanent, permanent |
-| `modpacks` | `[fabric-standard]` | Modpack names to include (resolved recursively) |
-| `extra_mods` | `[]` | Additional Modrinth slugs (supports `slug:version` pinning) |
+| `mod_groups` | `[fabric-base]` | Which named mod groups to include |
+| `modrinth_mods` | `[]` | Additional Modrinth slugs (supports `slug:version` pinning) |
+| `jar_mods` | `[]` | Filenames from `shared/mods/` |
 | `modrinth_version_type` | `release` | Modrinth release channel: release, beta, alpha |
 | `bluemap` | auto-detected | Whether BlueMap is enabled (inferred from resolved mods if not set) |
 | `bluemap_port` | auto-assigned | Localhost port for BlueMap web UI (8100, 8101, ...) |
@@ -156,48 +170,8 @@ servers:
 **Constants** (always set by generator, not configurable per-server):
 - `EULA=TRUE`
 - `WHITELIST_ENABLED=true`, `ENFORCE_WHITELIST=true`
-- `OPS=d2683803`, `WHITELIST=d2683803`
+- `OPS` and `WHITELIST` — populated from the `players` block in manifest.yml
 - `RCON_PASSWORD=${RCON_PASSWORD}` (resolved at runtime by `op run`)
-- `ENABLE_CHEATS=true`
-
-### Modpack Manifests
-
-```yaml
-# shared/modpacks/fabric-base/manifest.yml
-name: fabric-base
-description: Core Fabric performance mods
-mods:
-  - fabric-api
-  - lithium
-  - ferrite-core
-  - c2me-fabric
-  - scalablelux
-  - noisium
-```
-
-```yaml
-# shared/modpacks/fabric-standard/manifest.yml
-name: fabric-standard
-description: Full Fabric setup (perf + maps + voice + LOD)
-includes:
-  - fabric-base
-mods:
-  - distanthorizons
-  - bluemap
-  - simple-voice-chat
-```
-
-```yaml
-# shared/modpacks/vanilla/manifest.yml
-name: vanilla
-description: No mods
-mods: []
-```
-
-**Resolution example:** A server with `modpacks: [fabric-standard], extra_mods: [some-addon]` resolves to:
-`fabric-api, lithium, ferrite-core, c2me-fabric, scalablelux, noisium, distanthorizons, bluemap, simple-voice-chat, some-addon`
-
-Mods support Modrinth version pinning syntax: `lithium:0.12.0` or `iris:beta`.
 
 ### Server Env Template
 
@@ -207,6 +181,9 @@ New servers get a `servers/<name>/env` pre-populated from `shared/templates/serv
 # Minecraft settings for <name>
 # Edit these, then restart: mc-stop <name> && mc-start <name>
 # Reference: https://docker-minecraft-server.readthedocs.io/en/latest/configuration/server-properties/
+#
+# NOTE: Settings managed by manifest.yml (mode, memory, type, version, seed,
+# motd, mods) cannot be overridden here. Edit manifest.yml and run mc-generate.
 
 DIFFICULTY=normal
 ENABLE_COMMAND_BLOCK=true
@@ -231,10 +208,10 @@ The foundation. After this phase, servers can be created and destroyed via scrip
 
 1. Install dependency: `apt install python3-yaml` on VPS (add to setup.sh)
 2. Update `configure-bash.sh` to add `/opt/minecraft/shared/scripts` to PATH
-3. Define modpack manifests (`fabric-base`, `fabric-standard`, `vanilla`)
+3. Create `shared/mods/` directory (with `.gitkeep`; JARs gitignored)
 4. Create `shared/templates/server-env.template`
-5. Create `manifest.yml` with entries matching current creative + test servers
-6. Write `mc-generate` — reads manifest + modpacks, produces compose + nginx
+5. Create `manifest.yml` with mod groups + entries matching current creative + test servers
+6. Write `mc-generate` — reads manifest, produces compose + nginx
 7. Write `mc-create` — adds to manifest, runs mc-generate, creates server dir + env
 8. Write `mc-destroy` — removes from manifest, runs mc-generate, cleans up
 9. Implement BlueMap EULA auto-acceptance
@@ -243,12 +220,12 @@ The foundation. After this phase, servers can be created and destroyed via scrip
 ### mc-generate
 
 Python script that:
-1. Reads `manifest.yml` and all referenced modpack manifests
-2. Resolves modpack `includes` chains (recursive, deduplicated)
+1. Reads `manifest.yml` (mod groups + all server definitions)
+2. For each server, resolves mod groups + modrinth_mods into a combined list
 3. Generates complete `docker-compose.yml`:
    - Static services (acme-dns — from a hardcoded template in the script)
    - mc-router with `MAPPING` built from all servers
-   - One MC server block per manifest entry (with resolved MODRINTH_PROJECTS, ports, volumes, resource limits, env_file reference)
+   - One MC server block per server (with MODRINTH_PROJECTS, MODS + volume mounts for jar_mods, ports, resource limits, env_file reference)
 4. Generates `nginx/conf.d/bluemap.conf` for all servers with `bluemap: true`
 5. Validates with `docker compose config --quiet` before overwriting
 6. Adds a header comment to generated files: `# Generated by mc-generate — edit manifest.yml instead`
@@ -268,14 +245,15 @@ mc-create --name <name> [options]
 | `--name` | (required) | Server name (lowercase alphanumeric + hyphens) |
 | `--type` | `FABRIC` | FABRIC, VANILLA, PAPER |
 | `--version` | `LATEST` | Minecraft version |
-| `--modpack` | `[fabric-standard]` | Modpack name(s), repeatable |
-| `--extra-mods` | `[]` | Additional Modrinth slugs, comma-separated |
+| `--mod-group` | `[fabric-base]` | Mod group(s), repeatable |
+| `--modrinth-mods` | `[]` | Modrinth slugs, comma-separated |
+| `--jar-mods` | `[]` | Filenames from shared/mods/, comma-separated |
 | `--memory` | tier-based | Heap size |
 | `--tier` | `ephemeral` | ephemeral, semi-permanent, permanent |
 | `--mode` | `creative` | creative, survival, adventure, spectator |
 | `--seed` | none | World seed |
 | `--motd` | `"<Name> Server"` | Server MOTD |
-| `--no-bluemap` | — | Disable BlueMap even if modpack includes it |
+| `--no-bluemap` | — | Disable BlueMap even if mods include it |
 | `--svc` | — | Enable SVC port mapping (validates no other server has it) |
 
 **Does NOT start the server.** The user reviews/edits `servers/<name>/env` first, then runs `mc-start <name>`.
@@ -437,11 +415,12 @@ Already described in mc-destroy. Additionally:
 - Should `mc-generate` also regenerate `servers/<name>/env` files, or only create them on `mc-create`? (Leaning: only on create — env files are user-edited and should never be overwritten.)
 - Exact HOCON format needed for BlueMap `core.conf` pre-creation (test during implementation).
 - Should we validate that the SVC port (24454) isn't mapped to a stopped server? (Probably not — the port binding only matters when the container is running.)
+- Verify that `MODRINTH_PROJECTS` and `MODS` env var coexist without cleanup conflicts (test during implementation).
 
 ## Done When
 
 ### Phase 3a
-- `manifest.yml` and modpack manifests defined and committed
+- `manifest.yml` defined and committed with mod groups + existing server entries
 - `mc-generate` produces a working `docker-compose.yml` + nginx config
 - `mc-create` creates a fully functional server from a single command
 - `mc-destroy` removes a server cleanly
