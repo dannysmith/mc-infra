@@ -41,7 +41,7 @@ services:
         ferrite-core
         c2me-fabric
         scalablelux
-        noisium
+        noisiumforked
         distanthorizons
         bluemap
         simple-voice-chat
@@ -51,7 +51,7 @@ services:
       WHITELIST: d2683803,Kam93
       MOTD: "Creative Server"
       MODE: creative
-      RCON_PASSWORD: ${RCON_PASSWORD}
+      RCON_PASSWORD: ${RCON_PASSWORD:-changeme}
     ports:
     - "24454:24454/udp"
     - "127.0.0.1:8100:8100"
@@ -81,7 +81,7 @@ services:
         ferrite-core
         c2me-fabric
         scalablelux
-        noisium
+        noisiumforked
         bluemap
       SEED: "-4172144997902289642"
       WHITELIST_ENABLED: "true"
@@ -90,7 +90,7 @@ services:
       WHITELIST: d2683803,Kam93
       MOTD: "Test Server"
       MODE: creative
-      RCON_PASSWORD: ${RCON_PASSWORD}
+      RCON_PASSWORD: ${RCON_PASSWORD:-changeme}
     ports:
     - "127.0.0.1:8101:8100"
     volumes:

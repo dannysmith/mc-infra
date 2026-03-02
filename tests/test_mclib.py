@@ -12,7 +12,7 @@ class TestResolveMods:
         mods = mclib.resolve_mods(server, mod_groups)
         assert mods == [
             'fabric-api', 'lithium', 'ferrite-core', 'c2me-fabric',
-            'scalablelux', 'noisium',
+            'scalablelux', 'noisiumforked',
             'distanthorizons', 'bluemap', 'simple-voice-chat',
         ]
 

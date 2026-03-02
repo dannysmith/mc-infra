@@ -100,7 +100,7 @@ class TestComposeMcServer:
         assert env['EULA'] == 'TRUE'
         assert env['WHITELIST_ENABLED'] == 'true'
         assert env['ENFORCE_WHITELIST'] == 'true'
-        assert env['RCON_PASSWORD'] == '${RCON_PASSWORD}'
+        assert env['RCON_PASSWORD'] == '${RCON_PASSWORD:-changeme}'
 
     def test_environment_from_manifest(self, sample_manifest):
         compose = yaml.safe_load(mclib.generate_compose(sample_manifest))
@@ -118,7 +118,7 @@ class TestComposeMcServer:
         # fabric-base group + modrinth_mods
         assert 'fabric-api' in lines
         assert 'lithium' in lines
-        assert 'noisium' in lines
+        assert 'noisiumforked' in lines
         assert 'distanthorizons' in lines
         assert 'bluemap' in lines
         assert 'simple-voice-chat' in lines

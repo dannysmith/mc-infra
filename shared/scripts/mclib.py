@@ -254,7 +254,7 @@ def _build_mc_server(name, server, mod_groups, players):
     env['WHITELIST'] = whitelist_str
     env['MOTD'] = QuotedStr(config['motd'])
     env['MODE'] = config['mode']
-    env['RCON_PASSWORD'] = '${RCON_PASSWORD}'
+    env['RCON_PASSWORD'] = '${RCON_PASSWORD:-changeme}'
 
     # Ports
     ports = []

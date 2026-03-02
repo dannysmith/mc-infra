@@ -22,7 +22,7 @@ def sample_manifest():
                 'ferrite-core',
                 'c2me-fabric',
                 'scalablelux',
-                'noisium',
+                'noisiumforked',
             ],
         },
         'servers': {
