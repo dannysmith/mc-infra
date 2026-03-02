@@ -53,6 +53,7 @@ All scripts live in `shared/scripts/` and are on PATH via `~/.bash_aliases`. Pyt
 | `mc-generate`          | Python   | Regenerate compose + nginx from manifest                       |
 | `mc-create`            | Python   | Create a new server (adds to manifest, generates, sets up dir) |
 | `mc-destroy`           | Python   | Remove a server (tier-enforced deletion)                       |
+| `mc-archive`           | Python   | Archive world data to tarball, then destroy                    |
 | `mc-status`            | Python   | Show status of all servers                                     |
 | `mc-start` / `mc-stop` | Bash     | Start/stop servers                                             |
 | `mc-logs <server>`     | Bash     | Tail logs for a server                                         |

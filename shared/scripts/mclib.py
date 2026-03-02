@@ -476,6 +476,51 @@ def setup_bluemap_eula(project_root, name):
             f.write('accept-download: true\n')
 
 
+# ---------------------------------------------------------------------------
+# Archive
+# ---------------------------------------------------------------------------
+
+def archive_server_data(project_root, name, backups_dir):
+    """Tar + compress servers/<name>/data/ into backups_dir.
+
+    Returns the path to the created archive.
+    """
+    import tarfile
+    from datetime import date
+
+    data_dir = os.path.join(project_root, 'servers', name, 'data')
+    if not os.path.isdir(data_dir):
+        raise ValueError(f"No data directory for server '{name}'")
+
+    os.makedirs(backups_dir, exist_ok=True)
+
+    archive_name = f"{name}-{date.today().isoformat()}.tar.gz"
+    archive_path = os.path.join(backups_dir, archive_name)
+
+    with tarfile.open(archive_path, 'w:gz') as tar:
+        tar.add(data_dir, arcname='data')
+
+    return archive_path
+
+
+def check_archive_warnings(manifest, name):
+    """Return a list of warning strings for archiving this server.
+
+    Permanent-tier servers get a warning suggesting the backup system instead.
+    """
+    if name not in manifest['servers']:
+        raise ValueError(f"Server '{name}' not found")
+
+    warnings = []
+    tier = manifest['servers'][name].get('tier', 'ephemeral')
+    if tier == 'permanent':
+        warnings.append(
+            f"Server '{name}' is permanent tier. Consider using the backup "
+            "system (Phase 4) instead of archiving."
+        )
+    return warnings
+
+
 BLUEMAP_EULA_POLL_SCRIPT = '''\
 #!/usr/bin/env bash
 # Background poller: wait for BlueMap to write core.conf, then fix it.

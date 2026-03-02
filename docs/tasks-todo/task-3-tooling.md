@@ -375,16 +375,23 @@ Uses the rcon-cli bundled in itzg containers. Provides an interactive RCON shell
 
 ## Phase 3c: Advanced Features
 
-### mc-archive
+### mc-archive ✅
 
 ```bash
-mc-archive <name>
+mc-archive <name> [--confirm] [--force]
 ```
 
-1. Stop the server
-2. Tar + compress `servers/<name>/data/` to `shared/backups/<name>-<date>.tar.gz`
-3. Run `mc-destroy` to clean up (removes from manifest, regenerates compose, etc.)
-4. Print archive location
+1. ✅ Stop the server
+2. ✅ Tar + compress `servers/<name>/data/` to `shared/backups/<name>-<date>.tar.gz`
+3. ✅ Run `mc-destroy` to clean up (removes from manifest, regenerates compose, etc.)
+4. ✅ Print archive location
+
+### Protection Level Enforcement ✅
+
+- ✅ `mc-destroy`: ephemeral=immediate, semi-permanent=--confirm, permanent=refuses
+- ✅ `mc-status`: shows tier prominently in output
+- ✅ `mc-archive`: warns for permanent-tier servers (suggests backup system instead)
+- ✅ `mc-archive` passes `--confirm`/`--force` through to `mc-destroy`
 
 ### World Import
 
@@ -397,12 +404,6 @@ mc-create --name creative-v2 --world-from creative
 
 - `--world <path-or-url>` — extract archive into `servers/<name>/data/` before first start. The itzg container's `WORLD` env var could also handle this, but pre-extracting gives more control.
 - `--world-from <server>` — copy `servers/<source>/data/world/` to the new server. Source server should be stopped (or at minimum, a save-all issued via RCON first).
-
-### Protection Level Enforcement
-
-Already described in mc-destroy. Additionally:
-- `mc-status` should show tier prominently
-- `mc-archive` should warn for permanent-tier servers (suggest using proper backup system from Phase 4 instead)
 
 ---
 
@@ -435,9 +436,9 @@ Already described in mc-destroy. Additionally:
 - ✅ `mc-status` gives a clear overview of all servers
 
 ### Phase 3c
-- Can archive a server's world data before destroying
+- ✅ Can archive a server's world data before destroying
 - Can import worlds from files/URLs/other servers
-- Protection levels enforced on destroy
+- ✅ Protection levels enforced on destroy and archive
 
 ---
 

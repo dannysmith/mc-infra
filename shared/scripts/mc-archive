@@ -1,0 +1,90 @@
+#!/usr/bin/env python3
+"""Archive a Minecraft server's world data, then destroy it.
+
+Stops the server, compresses servers/<name>/data/ to a tarball in
+shared/backups/, then runs mc-destroy to clean up.
+"""
+
+import argparse
+import os
+import subprocess
+import sys
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import mclib
+
+
+def find_project_root():
+    d = os.path.dirname(os.path.abspath(__file__))
+    while d != '/':
+        if os.path.exists(os.path.join(d, 'manifest.yml')):
+            return d
+        d = os.path.dirname(d)
+    print("Error: cannot find manifest.yml", file=sys.stderr)
+    sys.exit(1)
+
+
+def main():
+    p = argparse.ArgumentParser(description='Archive and remove a Minecraft server')
+    p.add_argument('name', help='Server name')
+    p.add_argument('--confirm', action='store_true',
+                   help='Confirm archival of semi-permanent server')
+    p.add_argument('--force', action='store_true',
+                   help='Force archival (even for permanent tier)')
+    args = p.parse_args()
+
+    root = find_project_root()
+    manifest_path = os.path.join(root, 'manifest.yml')
+    manifest = mclib.load_manifest(manifest_path)
+
+    # Check server exists
+    if args.name not in manifest['servers']:
+        print(f"Error: server '{args.name}' not found", file=sys.stderr)
+        sys.exit(1)
+
+    # Tier warnings
+    warnings = mclib.check_archive_warnings(manifest, args.name)
+    for w in warnings:
+        print(f"Warning: {w}", file=sys.stderr)
+
+    # Stop the server
+    print(f"Stopping {args.name}...")
+    try:
+        subprocess.run(
+            ['docker', 'compose', 'stop', args.name],
+            capture_output=True, cwd=root,
+        )
+    except FileNotFoundError:
+        pass
+
+    # Archive world data
+    backups_dir = os.path.join(root, 'shared', 'backups')
+    try:
+        archive_path = mclib.archive_server_data(root, args.name, backups_dir)
+        print(f"  Archived to {archive_path}")
+    except ValueError as e:
+        print(f"Error: {e}", file=sys.stderr)
+        sys.exit(1)
+
+    # Destroy (delegates to mc-destroy with same confirm/force flags)
+    destroy_script = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)), 'mc-destroy'
+    )
+    destroy_args = [sys.executable, destroy_script, args.name]
+    if args.confirm:
+        destroy_args.append('--confirm')
+    if args.force:
+        destroy_args.append('--force')
+
+    result = subprocess.run(destroy_args)
+    if result.returncode != 0:
+        print("Warning: archive created but destroy failed. "
+              f"Archive at: {archive_path}", file=sys.stderr)
+        sys.exit(result.returncode)
+
+    print(f"\nServer '{args.name}' archived and destroyed.")
+    print(f"Archive: {archive_path}")
+
+
+if __name__ == '__main__':
+    main()

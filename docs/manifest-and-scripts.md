@@ -193,6 +193,18 @@ mc-logs <name> --follow       # Follow live
 mc-logs <name> -n 500         # Last 500 lines
 ```
 
+### mc-archive
+
+Archive a server's world data to a tarball, then destroy the server.
+
+```bash
+mc-archive <name> [--confirm] [--force]
+```
+
+Stops the server, compresses `servers/<name>/data/` to `shared/backups/<name>-<date>.tar.gz`, then runs `mc-destroy` to clean up. The `--confirm` and `--force` flags are passed through to `mc-destroy` for tier enforcement.
+
+Warns if the server is permanent tier (suggests using the backup system instead).
+
 ### mc-console
 
 Open an interactive RCON shell for a running server.
@@ -230,6 +242,13 @@ mc-start my-world
 ```bash
 mc-destroy my-world              # ephemeral: immediate
 mc-destroy my-world --confirm    # semi-permanent: needs confirmation
+```
+
+### Archive and remove a server
+
+```bash
+mc-archive my-world
+# Archive saved to shared/backups/my-world-2026-03-02.tar.gz
 ```
 
 ### Change Minecraft settings (difficulty, view distance, etc.)
