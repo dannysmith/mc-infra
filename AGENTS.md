@@ -20,17 +20,20 @@ The existing "N19 Server" on WiseHosting is separate and not managed here.
 
 ## Key Files
 
+- `manifest.yml` — **Source of truth** for all server definitions and mod groups
+- `docker-compose.yml` — **Generated** by `mc-generate` from manifest (do not edit directly)
+- `nginx/conf.d/bluemap.conf` — **Generated** by `mc-generate` (do not edit directly)
 - `setup.sh` — Host provisioning script (idempotent, run on fresh Debian box)
 - `setup-ssl.sh` — SSL cert setup via acme-dns (interactive on first run)
-- `docker-compose.yml` — All services: acme-dns, mc-router, MC servers, backup sidecars
 - `.env.tpl` — 1Password secret references (resolved at runtime by `op run`)
-- `servers/<name>/env` — Per-server environment overrides
+- `servers/<name>/env` — Per-server Minecraft settings (user-editable, not generated)
 - `acme-dns/` — Dockerfile (builds from source for ARM) and config for self-hosted acme-dns
-- `shared/scripts/` — Management scripts (`mc-create`, `mc-status`, etc.)
-- `shared/modpacks/` — Mod collections with manifests
+- `shared/scripts/mclib.py` — Shared Python library for all management scripts
+- `shared/scripts/` — Management scripts (`mc-create`, `mc-generate`, etc.)
+- `shared/mods/` — Shared JAR files for non-Modrinth mods
 - `shared/templates/` — Templates for new server creation
 - `nginx/conf.d/` — Nginx reverse proxy and SSL configs
-- `docs/` — Requirements, research, reference (see `docs/dns-and-routing.md` for routing/SSL architecture)
+- `docs/` — Reference docs (see `docs/manifest-and-scripts.md` for the manifest system, `docs/dns-and-routing.md` for routing/SSL)
 
 ## Task Management
 
@@ -43,25 +46,24 @@ Work through tasks in priority order (lowest number first). When completing a ta
 
 ## Management Scripts
 
-All scripts live in `shared/scripts/` and are symlinked into PATH during setup.
+All scripts live in `shared/scripts/` and are on PATH via `~/.bash_aliases`. Python scripts use `mclib.py` for shared logic. See `docs/manifest-and-scripts.md` for full usage details.
 
-| Script | Purpose |
-|--------|---------|
-| `mc-create` | Create a new server from template |
-| `mc-destroy` / `mc-archive` | Remove or archive a server |
-| `mc-start` / `mc-stop` | Server lifecycle |
-| `mc-status` | Show status of all servers |
-| `mc-logs <server>` | Tail logs for a server |
-| `mc-console <server>` | Attach to server console (RCON) |
-| `mc-backup <server>` | Trigger an immediate backup |
-| `mc-update-mods <modpack>` | Check for and apply mod updates |
+| Script                 | Language | Purpose                                                        |
+| ---------------------- | -------- | -------------------------------------------------------------- |
+| `mc-generate`          | Python   | Regenerate compose + nginx from manifest                       |
+| `mc-create`            | Python   | Create a new server (adds to manifest, generates, sets up dir) |
+| `mc-destroy`           | Python   | Remove a server (tier-enforced deletion)                       |
+| `mc-status`            | Python   | Show status of all servers                                     |
+| `mc-start` / `mc-stop` | Bash     | Start/stop servers                                             |
+| `mc-logs <server>`     | Bash     | Tail logs for a server                                         |
+| `mc-console <server>`  | Bash     | Attach to server console (RCON)                                |
 
 ## Players
 
-| Player | Username | UUID |
-|--------|----------|------|
-| Danny | `d2683803` | `ee7ca56d-5238-4226-89a3-9db69f2800f5` |
-| Cam | `Kam93` | `6476f3d3-13ca-4c7d-84b8-dab9c317184b` |
+| Player | Username   | UUID                                   |
+| ------ | ---------- | -------------------------------------- |
+| Danny  | `d2683803` | `ee7ca56d-5238-4226-89a3-9db69f2800f5` |
+| Cam    | `Kam93`    | `6476f3d3-13ca-4c7d-84b8-dab9c317184b` |
 
 Danny is OP on all servers. Both players are whitelisted on all servers. Managed via `players` block in `manifest.yml`.
 
@@ -70,5 +72,6 @@ Danny is OP on all servers. Both players are whitelisted on all servers. Managed
 - Server names: lowercase alphanumeric + hyphens (used as Docker container names, subdomains, and directory names)
 - Server tiers: `ephemeral` (no backups, easy delete), `semi-permanent` (daily backups), `permanent` (6h backups, deletion safeguards)
 - All MC servers share a `minecraft-net` Docker bridge network
-- Resource limits set per container in docker-compose.yml
+- Resource limits auto-calculated from tier (set in generated docker-compose.yml)
 - Secrets never stored in plain text — use 1Password (`op run`) or `auth.json` for Claude Code
+- Tests: `pytest` in a local `.venv/` (see `docs/python-and-testing.md`)

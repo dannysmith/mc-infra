@@ -53,9 +53,10 @@ The generator combines mod groups + modrinth mods into `MODRINTH_PROJECTS`, and 
 
 ### Scripts
 
-- **Python** (stdlib + PyYAML via `apt install python3-yaml`) for complex scripts: `mc-create`, `mc-destroy`, `mc-archive`, `mc-generate`
-- **Bash** for simple wrappers: `mc-start`, `mc-stop`, `mc-status`, `mc-logs`, `mc-console`
+- **Python** (stdlib + PyYAML via `apt install python3-yaml`) for complex scripts: `mc-create`, `mc-destroy`, `mc-archive`, `mc-generate`, `mc-status`
+- **Bash** for simple wrappers: `mc-start`, `mc-stop`, `mc-logs`, `mc-console`
 - All scripts live in `shared/scripts/` and are added to PATH via `/opt/minecraft/shared/scripts` in `.bash_aliases`
+- Shared logic in `mclib.py` — testable with pytest (see `docs/python-and-testing.md`)
 
 ### File Layout
 
@@ -140,23 +141,23 @@ servers:
 
 ### Server Fields
 
-| Field | Default | Description |
-|-------|---------|-------------|
-| `type` | `FABRIC` | Server type: FABRIC, VANILLA, PAPER |
-| `version` | `LATEST` | Minecraft version (e.g. `1.21.4`, `LATEST`, `25w08a`) |
-| `mode` | `creative` | Game mode: creative, survival, adventure, spectator |
-| `memory` | tier-based | Java heap size (e.g. `2G`, `4G`) |
-| `tier` | `ephemeral` | Protection level: ephemeral, semi-permanent, permanent |
-| `mod_groups` | `[fabric-base]` | Which named mod groups to include |
-| `modrinth_mods` | `[]` | Additional Modrinth slugs (supports `slug:version` pinning) |
-| `jar_mods` | `[]` | Filenames from `shared/mods/` |
-| `modrinth_version_type` | `release` | Modrinth release channel: release, beta, alpha |
-| `bluemap` | auto-detected | Whether BlueMap is enabled (inferred from resolved mods if not set) |
-| `bluemap_port` | auto-assigned | Localhost port for BlueMap web UI (8100, 8101, ...) |
-| `svc` | `false` | Whether Simple Voice Chat UDP port is mapped to this server |
-| `seed` | `null` | World seed (quote negative values) |
-| `motd` | `"<Name> Server"` | Server MOTD |
-| `created` | auto-set | Creation date (set by mc-create) |
+| Field                   | Default           | Description                                                         |
+| ----------------------- | ----------------- | ------------------------------------------------------------------- |
+| `type`                  | `FABRIC`          | Server type: FABRIC, VANILLA, PAPER                                 |
+| `version`               | `LATEST`          | Minecraft version (e.g. `1.21.4`, `LATEST`, `25w08a`)               |
+| `mode`                  | `creative`        | Game mode: creative, survival, adventure, spectator                 |
+| `memory`                | tier-based        | Java heap size (e.g. `2G`, `4G`)                                    |
+| `tier`                  | `ephemeral`       | Protection level: ephemeral, semi-permanent, permanent              |
+| `mod_groups`            | `[fabric-base]`   | Which named mod groups to include                                   |
+| `modrinth_mods`         | `[]`              | Additional Modrinth slugs (supports `slug:version` pinning)         |
+| `jar_mods`              | `[]`              | Filenames from `shared/mods/`                                       |
+| `modrinth_version_type` | `release`         | Modrinth release channel: release, beta, alpha                      |
+| `bluemap`               | auto-detected     | Whether BlueMap is enabled (inferred from resolved mods if not set) |
+| `bluemap_port`          | auto-assigned     | Localhost port for BlueMap web UI (8100, 8101, ...)                 |
+| `svc`                   | `false`           | Whether Simple Voice Chat UDP port is mapped to this server         |
+| `seed`                  | `null`            | World seed (quote negative values)                                  |
+| `motd`                  | `"<Name> Server"` | Server MOTD                                                         |
+| `created`               | auto-set          | Creation date (set by mc-create)                                    |
 
 **Default memory by tier** (when `memory` not specified):
 - ephemeral: `2G`
@@ -200,22 +201,22 @@ ENABLE_COMMAND_BLOCK=true
 
 ---
 
-## Phase 3a: Core Infrastructure
+## Phase 3a: Core Infrastructure ✅
 
 The foundation. After this phase, servers can be created and destroyed via scripts.
 
 ### Steps
 
-1. Install dependency: `apt install python3-yaml` on VPS (add to setup.sh)
-2. Update `configure-bash.sh` to add `/opt/minecraft/shared/scripts` to PATH
-3. Create `shared/mods/` directory (with `.gitkeep`; JARs gitignored)
-4. Create `shared/templates/server-env.template`
-5. Create `manifest.yml` with mod groups + entries matching current creative + test servers
-6. Write `mc-generate` — reads manifest, produces compose + nginx
-7. Write `mc-create` — adds to manifest, runs mc-generate, creates server dir + env
-8. Write `mc-destroy` — removes from manifest, runs mc-generate, cleans up
-9. Implement BlueMap EULA auto-acceptance
-10. Migrate: run mc-generate, diff against current compose, verify functional equivalence, commit
+1. ✅ Install dependency: `apt install python3-yaml` on VPS (add to setup.sh)
+2. ✅ Update `configure-bash.sh` to add `/opt/minecraft/shared/scripts` to PATH
+3. ✅ Create `shared/mods/` directory (with `.gitkeep`; JARs gitignored)
+4. ✅ Create `shared/templates/server-env.template`
+5. ✅ Create `manifest.yml` with mod groups + entries matching current creative + test servers
+6. ✅ Write `mc-generate` — reads manifest, produces compose + nginx
+7. ✅ Write `mc-create` — adds to manifest, runs mc-generate, creates server dir + env
+8. ✅ Write `mc-destroy` — removes from manifest, runs mc-generate, cleans up
+9. ✅ Implement BlueMap EULA auto-acceptance (pre-creates core.conf + background poller fallback)
+10. ✅ Migrate: run mc-generate, diff against current compose, verify functional equivalence, commit
 
 ### mc-generate
 
@@ -240,21 +241,21 @@ mc-create --name <name> [options]
 
 **Flags:**
 
-| Flag | Default | Description |
-|------|---------|-------------|
-| `--name` | (required) | Server name (lowercase alphanumeric + hyphens) |
-| `--type` | `FABRIC` | FABRIC, VANILLA, PAPER |
-| `--version` | `LATEST` | Minecraft version |
-| `--mod-group` | `[fabric-base]` | Mod group(s), repeatable |
-| `--modrinth-mods` | `[]` | Modrinth slugs, comma-separated |
-| `--jar-mods` | `[]` | Filenames from shared/mods/, comma-separated |
-| `--memory` | tier-based | Heap size |
-| `--tier` | `ephemeral` | ephemeral, semi-permanent, permanent |
-| `--mode` | `creative` | creative, survival, adventure, spectator |
-| `--seed` | none | World seed |
-| `--motd` | `"<Name> Server"` | Server MOTD |
-| `--no-bluemap` | — | Disable BlueMap even if mods include it |
-| `--svc` | — | Enable SVC port mapping (validates no other server has it) |
+| Flag              | Default           | Description                                                |
+| ----------------- | ----------------- | ---------------------------------------------------------- |
+| `--name`          | (required)        | Server name (lowercase alphanumeric + hyphens)             |
+| `--type`          | `FABRIC`          | FABRIC, VANILLA, PAPER                                     |
+| `--version`       | `LATEST`          | Minecraft version                                          |
+| `--mod-group`     | `[fabric-base]`   | Mod group(s), repeatable                                   |
+| `--modrinth-mods` | `[]`              | Modrinth slugs, comma-separated                            |
+| `--jar-mods`      | `[]`              | Filenames from shared/mods/, comma-separated               |
+| `--memory`        | tier-based        | Heap size                                                  |
+| `--tier`          | `ephemeral`       | ephemeral, semi-permanent, permanent                       |
+| `--mode`          | `creative`        | creative, survival, adventure, spectator                   |
+| `--seed`          | none              | World seed                                                 |
+| `--motd`          | `"<Name> Server"` | Server MOTD                                                |
+| `--no-bluemap`    | —                 | Disable BlueMap even if mods include it                    |
+| `--svc`           | —                 | Enable SVC port mapping (validates no other server has it) |
 
 **Does NOT start the server.** The user reviews/edits `servers/<name>/env` first, then runs `mc-start <name>`.
 
@@ -306,9 +307,9 @@ This is non-blocking — mc-create returns immediately and the handler runs in t
 
 ---
 
-## Phase 3b: Lifecycle Scripts
+## Phase 3b: Lifecycle Scripts ✅
 
-Simple wrappers for day-to-day management. All bash.
+Simple wrappers for day-to-day management. All bash (except mc-status which is Python).
 
 ### mc-start
 
@@ -410,29 +411,100 @@ Already described in mc-destroy. Additionally:
 - `python3-yaml` — PyYAML for reading/writing YAML manifests and generating compose (install via `apt install python3-yaml`, add to `setup.sh`)
 - All other tools already installed (Docker, nginx, rcon-cli in containers)
 
-## Open Questions
+## Open Questions (Resolved)
 
-- Should `mc-generate` also regenerate `servers/<name>/env` files, or only create them on `mc-create`? (Leaning: only on create — env files are user-edited and should never be overwritten.)
-- Exact HOCON format needed for BlueMap `core.conf` pre-creation (test during implementation).
-- Should we validate that the SVC port (24454) isn't mapped to a stopped server? (Probably not — the port binding only matters when the container is running.)
-- Verify that `MODRINTH_PROJECTS` and `MODS` env var coexist without cleanup conflicts (test during implementation).
+- **Env file regeneration**: Only on create. `mc-generate` never touches env files. ✅
+- **BlueMap core.conf format**: A simple `accept-download: true\n` one-liner works. We pre-create it and also run a background poller as fallback in case BlueMap overwrites it. ✅
+- **SVC port on stopped servers**: No validation needed — the port binding only matters when the container is running. ✅
+- **MODRINTH_PROJECTS + MODS coexistence**: Not yet tested on a live server (needs a server with both modrinth mods and jar mods). To verify during Phase 3c or when first needed.
 
 ## Done When
 
-### Phase 3a
-- `manifest.yml` defined and committed with mod groups + existing server entries
-- `mc-generate` produces a working `docker-compose.yml` + nginx config
-- `mc-create` creates a fully functional server from a single command
-- `mc-destroy` removes a server cleanly
-- Existing creative and test servers migrated to manifest-based generation
-- BlueMap EULA handled automatically
-- Scripts on PATH
+### Phase 3a ✅
+- ✅ `manifest.yml` defined and committed with mod groups + existing server entries
+- ✅ `mc-generate` produces a working `docker-compose.yml` + nginx config
+- ✅ `mc-create` creates a fully functional server from a single command
+- ✅ `mc-destroy` removes a server cleanly
+- ✅ Existing creative and test servers migrated to manifest-based generation
+- ✅ BlueMap EULA handled automatically
+- ✅ Scripts on PATH
+- ✅ 80 passing tests covering all core logic
 
-### Phase 3b
-- All lifecycle scripts work: start, stop, status, logs, console
-- `mc-status` gives a clear overview of all servers
+### Phase 3b ✅
+- ✅ All lifecycle scripts work: start, stop, status, logs, console
+- ✅ `mc-status` gives a clear overview of all servers
 
 ### Phase 3c
 - Can archive a server's world data before destroying
 - Can import worlds from files/URLs/other servers
 - Protection levels enforced on destroy
+
+---
+
+## Manual Steps on the Server
+
+After pulling this commit onto the VPS, run the following to bring the server in sync with the repo. Assumes you're SSH'd in as `danny` and working from `/opt/minecraft`.
+
+### 1. Install python3-yaml
+
+```bash
+sudo apt-get install -y python3-yaml
+```
+
+(This was added to `setup.sh` but we can't re-run setup.sh on an existing server.)
+
+### 2. Update bash environment (scripts on PATH)
+
+`configure-bash.sh` is idempotent — re-run it to pick up the new PATH addition:
+
+```bash
+sudo bash /opt/minecraft/configure-bash.sh danny
+```
+
+Then reload your shell:
+
+```bash
+source ~/.bash_aliases
+```
+
+Verify scripts are on PATH:
+
+```bash
+which mc-generate
+# Should print: /opt/minecraft/shared/scripts/mc-generate
+```
+
+### 3. Make scripts executable (if git didn't preserve permissions)
+
+```bash
+chmod +x /opt/minecraft/shared/scripts/mc-{generate,create,destroy,start,stop,status,logs,console}
+```
+
+### 4. Verify the generated compose matches what's deployed
+
+The compose in the repo was generated by `mc-generate` and has some intentional differences from the previous hand-written version:
+
+- `noisium` mod added to creative (via fabric-base group)
+- `Kam93` added to whitelist on all servers
+- test server gets fabric-base mods, `MODE: creative`, `env_file`, and 3g memory limit (was 2560m)
+- `DIFFICULTY` and `ENABLE_COMMAND_BLOCK` moved from compose to `servers/<name>/env` files
+
+To apply the new compose and restart:
+
+```bash
+cd /opt/minecraft
+op run --env-file=.env.tpl -- docker compose up -d
+sudo nginx -t && sudo systemctl reload nginx
+```
+
+This will recreate containers that have changed config. The `creative` server will pick up noisium on next mod download. The `test` server will get its new settings.
+
+### 5. Verify
+
+```bash
+mc-status
+mc-logs creative -n 20
+mc-logs test -n 20
+```
+
+Check that both servers start and the BlueMap UIs are accessible at `https://map-creative.mc.danny.is` and `https://map-test.mc.danny.is`.

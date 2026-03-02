@@ -13,14 +13,14 @@ A wildcard A record (`*.mc.danny.is → 89.167.86.134`) means no DNS changes are
 
 ## DNS Records on DNSimple
 
-| Type | Name | Value | Purpose |
-|------|------|-------|---------|
-| A | `mc.danny.is` | `89.167.86.134` | Apex subdomain (HTTPS redirect) |
-| A | `*.mc.danny.is` | `89.167.86.134` | All MC server and BlueMap subdomains |
-| A | `acme.mc.danny.is` | `89.167.86.134` | Points to acme-dns nameserver |
-| NS | `acme.mc.danny.is` | `acme.mc.danny.is.` | Delegates DNS authority to acme-dns |
-| CNAME | `_acme-challenge.mc.danny.is` | `<uuid>.acme.mc.danny.is.` | Routes ACME challenges to acme-dns |
-| CAA | `mc.danny.is` | `0 issue "letsencrypt.org"` | Only Let's Encrypt can issue certs |
+| Type  | Name                          | Value                       | Purpose                              |
+| ----- | ----------------------------- | --------------------------- | ------------------------------------ |
+| A     | `mc.danny.is`                 | `89.167.86.134`             | Apex subdomain (HTTPS redirect)      |
+| A     | `*.mc.danny.is`               | `89.167.86.134`             | All MC server and BlueMap subdomains |
+| A     | `acme.mc.danny.is`            | `89.167.86.134`             | Points to acme-dns nameserver        |
+| NS    | `acme.mc.danny.is`            | `acme.mc.danny.is.`         | Delegates DNS authority to acme-dns  |
+| CNAME | `_acme-challenge.mc.danny.is` | `<uuid>.acme.mc.danny.is.`  | Routes ACME challenges to acme-dns   |
+| CAA   | `mc.danny.is`                 | `0 issue "letsencrypt.org"` | Only Let's Encrypt can issue certs   |
 
 These are all static. The only time you'd touch DNSimple is if the VPS IP changes or you need to re-register with acme-dns (new UUID for the CNAME).
 
@@ -36,7 +36,7 @@ Player connects to creative.mc.danny.is:25565
   → creative:25565 (internal Docker network)
 ```
 
-**mc-router** (`itzg/mc-router`) handles subdomain-based routing. It reads the Minecraft handshake packet to determine which hostname the player connected to, then forwards to the correct backend container. Config is a static `MAPPING` env var in docker-compose.yml:
+**mc-router** (`itzg/mc-router`) handles subdomain-based routing. It reads the Minecraft handshake packet to determine which hostname the player connected to, then forwards to the correct backend container. Config is a `MAPPING` env var in docker-compose.yml (generated automatically from `manifest.yml` by `mc-generate`):
 
 ```yaml
 MAPPING: |
@@ -92,15 +92,15 @@ See "Why acme-dns" below for why this is set up this way.
 
 ## Port Summary
 
-| Port | Protocol | Exposed to | Service | Notes |
-|------|----------|-----------|---------|-------|
-| 25565 | TCP | Public | mc-router | Routes to MC servers by subdomain |
-| 443 | TCP | Public | Nginx | SSL termination, BlueMap reverse proxy |
-| 80 | TCP | Public | Nginx | HTTP → HTTPS redirect only |
-| 53 | TCP+UDP | Public | acme-dns | DNS server for ACME challenges |
-| 24454 | UDP | Public | SVC | Direct to one MC server only |
-| 8053 | TCP | Localhost | acme-dns API | Hook script updates TXT records |
-| 8100+ | TCP | Localhost | BlueMap | One port per server, Nginx proxies to these |
+| Port  | Protocol | Exposed to | Service      | Notes                                       |
+| ----- | -------- | ---------- | ------------ | ------------------------------------------- |
+| 25565 | TCP      | Public     | mc-router    | Routes to MC servers by subdomain           |
+| 443   | TCP      | Public     | Nginx        | SSL termination, BlueMap reverse proxy      |
+| 80    | TCP      | Public     | Nginx        | HTTP → HTTPS redirect only                  |
+| 53    | TCP+UDP  | Public     | acme-dns     | DNS server for ACME challenges              |
+| 24454 | UDP      | Public     | SVC          | Direct to one MC server only                |
+| 8053  | TCP      | Localhost  | acme-dns API | Hook script updates TXT records             |
+| 8100+ | TCP      | Localhost  | BlueMap      | One port per server, Nginx proxies to these |
 
 ## SSL Certificates
 
@@ -122,60 +122,28 @@ The CAA record on `mc.danny.is` adds a second layer: even if someone could manip
 
 ## Adding a New Server
 
-When creating a new MC server (e.g. `survival`), the routing-related changes are:
+Use `mc-create`:
 
-### 1. mc-router mapping (docker-compose.yml)
-
-Add the new hostname to the `MAPPING` env var:
-
-```yaml
-MAPPING: |
-  creative.mc.danny.is=creative:25565
-  survival.mc.danny.is=survival:25565
+```bash
+mc-create --name survival --mode survival --tier semi-permanent --modrinth-mods bluemap
 ```
 
-No new ports needed — mc-router handles it internally.
+This handles everything automatically: adds to `manifest.yml`, regenerates `docker-compose.yml` (mc-router MAPPING + server block) and `nginx/conf.d/bluemap.conf`, creates the server directory and env file, and pre-accepts the BlueMap EULA.
 
-### 2. BlueMap (if enabled)
+No DNS or SSL changes needed — the wildcard A record (`*.mc.danny.is`) and wildcard cert (`*.mc.danny.is`) already cover all subdomains.
 
-Add a localhost port binding in docker-compose.yml for the new server (next sequential port):
+After creating, review `servers/<name>/env` then `mc-start <name>`. Reload nginx if BlueMap is enabled: `sudo nginx -t && sudo systemctl reload nginx`.
 
-```yaml
-ports:
-  - "127.0.0.1:8101:8100"
-```
+See `docs/manifest-and-scripts.md` for full details on the manifest system and all `mc-*` commands.
 
-Add a new `server` block in `nginx/conf.d/bluemap.conf`:
+### What happens under the hood
 
-```nginx
-server {
-    listen 443 ssl;
-    server_name map-survival.mc.danny.is;
+For reference, `mc-create` + `mc-generate` handles these routing-related changes:
 
-    include /opt/minecraft/nginx/conf.d/ssl.conf;
-
-    location / {
-        proxy_pass http://127.0.0.1:8101;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection "upgrade";
-    }
-}
-```
-
-Then `sudo nginx -t && sudo systemctl reload nginx`.
-
-### 3. DNS
-
-Nothing. The wildcard A record (`*.mc.danny.is`) already covers all subdomains.
-
-### 4. SSL
-
-Nothing. The wildcard cert (`*.mc.danny.is`) already covers all subdomains.
+1. **mc-router mapping**: Adds `survival.mc.danny.is=survival:25565` to the `MAPPING` env var in docker-compose.yml
+2. **BlueMap** (if enabled): Assigns the next sequential localhost port (8100, 8101, ...) and adds a `server` block in nginx's `bluemap.conf`
+3. **DNS**: Nothing needed (wildcard A record)
+4. **SSL**: Nothing needed (wildcard cert)
 
 ## If the VPS IP Changes
 
@@ -200,13 +168,14 @@ Also update `docs/server-details.md` with the new IP.
 
 If moving from `mc.danny.is` to a different domain, update these files:
 
-| File | What to change |
-|------|---------------|
-| `acme-dns/config/config.cfg` | `domain`, `nsname`, `nsadmin`, `records` |
-| `docker-compose.yml` | mc-router `MAPPING` hostnames |
-| `nginx/conf.d/bluemap.conf` | `server_name` directives |
-| `nginx/conf.d/ssl.conf` | Certificate paths |
-| `setup-ssl.sh` | `DOMAIN` variable |
+| File                         | What to change                                          |
+| ---------------------------- | ------------------------------------------------------- |
+| `acme-dns/config/config.cfg` | `domain`, `nsname`, `nsadmin`, `records`                |
+| `shared/scripts/mclib.py`    | Domain in `_build_mc_router()` and `_NGINX_*` templates |
+| `nginx/conf.d/ssl.conf`      | Certificate paths                                       |
+| `setup-ssl.sh`               | `DOMAIN` variable                                       |
+
+Then run `mc-generate` to regenerate `docker-compose.yml` and `nginx/conf.d/bluemap.conf` with the new domain.
 
 You'll also need to:
 1. Set up new DNS records (A, NS, CNAME, CAA) for the new domain
