@@ -101,6 +101,16 @@ class TestComposeMcServer:
         assert env['WHITELIST_ENABLED'] == 'true'
         assert env['ENFORCE_WHITELIST'] == 'true'
         assert env['RCON_PASSWORD'] == '${RCON_PASSWORD:-changeme}'
+        assert env['USE_AIKAR_FLAGS'] == 'true'
+        assert env['REMOVE_OLD_MODS'] == 'TRUE'
+
+    def test_optimisation_flags_on_all_servers(self, sample_manifest):
+        """USE_AIKAR_FLAGS and REMOVE_OLD_MODS should be set on every MC server."""
+        compose = yaml.safe_load(mclib.generate_compose(sample_manifest))
+        for name in sample_manifest['servers']:
+            env = compose['services'][name]['environment']
+            assert env['USE_AIKAR_FLAGS'] == 'true', f'{name} missing USE_AIKAR_FLAGS'
+            assert env['REMOVE_OLD_MODS'] == 'TRUE', f'{name} missing REMOVE_OLD_MODS'
 
     def test_environment_from_manifest(self, sample_manifest):
         compose = yaml.safe_load(mclib.generate_compose(sample_manifest))
@@ -374,6 +384,18 @@ class TestNginxGeneration:
         raw = mclib.generate_nginx(sample_manifest)
         assert 'proxy_set_header Upgrade $http_upgrade;' in raw
         assert 'proxy_set_header Connection "upgrade";' in raw
+
+    def test_gzip_compression(self, sample_manifest):
+        raw = mclib.generate_nginx(sample_manifest)
+        assert 'gzip on;' in raw
+        assert 'gzip_types' in raw
+        assert 'application/javascript' in raw
+        assert 'application/json' in raw
+
+    def test_browser_caching(self, sample_manifest):
+        raw = mclib.generate_nginx(sample_manifest)
+        assert 'expires 1h;' in raw
+        assert 'Cache-Control' in raw
 
     def test_no_block_for_non_bluemap_server(self):
         manifest = {

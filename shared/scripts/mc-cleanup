@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+#
+# mc-cleanup — Remove unused Docker images and build cache.
+# Intended to run weekly via cron (installed by setup.sh).
+# Can also be run manually.
+#
+
+set -euo pipefail
+
+echo "[mc-cleanup] $(date -Iseconds) Pruning unused Docker images..."
+docker image prune -af --filter "until=168h"
+
+echo "[mc-cleanup] $(date -Iseconds) Pruning Docker build cache..."
+docker builder prune -af --filter "until=168h"
+
+echo "[mc-cleanup] $(date -Iseconds) Done."

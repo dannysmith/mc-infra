@@ -65,6 +65,7 @@ All scripts live in `shared/scripts/` and are on PATH via `~/.bash_aliases`. Pyt
 | `mc-start` / `mc-stop` | Bash     | Start/stop servers                                             |
 | `mc-logs <server>`     | Bash     | Tail logs for a server                                         |
 | `mc-console <server>`  | Bash     | Attach to server console (RCON)                                |
+| `mc-cleanup`           | Bash     | Prune unused Docker images and build cache (runs weekly via cron) |
 
 ## Players
 

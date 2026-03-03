@@ -131,6 +131,25 @@ fi
 
 usermod -aG docker danny
 
+# Configure Docker daemon defaults (log rotation)
+echo "==> Configuring Docker daemon..."
+DAEMON_JSON="/etc/docker/daemon.json"
+if [[ ! -f "$DAEMON_JSON" ]]; then
+  cat > "$DAEMON_JSON" <<'DAEMONJSON'
+{
+  "log-driver": "json-file",
+  "log-opts": {
+    "max-size": "10m",
+    "max-file": "3"
+  }
+}
+DAEMONJSON
+  systemctl restart docker
+  echo "    Docker daemon configured (log rotation: 10m x 3)"
+else
+  echo "    Docker daemon.json already exists (skipping)"
+fi
+
 # ---------------------------------------------------------------------------
 # 7. Install external tools
 # ---------------------------------------------------------------------------
@@ -331,7 +350,22 @@ echo "==> Configuring bash environment for danny..."
 bash "$SCRIPT_DIR/configure-bash.sh" danny
 
 # ---------------------------------------------------------------------------
-# 15. Summary
+# 15. Install cron jobs
+# ---------------------------------------------------------------------------
+
+echo "==> Installing cron jobs..."
+CRON_FILE="/etc/cron.d/mc-infra"
+cat > "$CRON_FILE" <<'CRONEOF'
+# Managed by mc-infra/setup.sh — re-run the script to update.
+
+# Weekly Docker cleanup (Sunday 04:00 UTC)
+0 4 * * 0 root /opt/minecraft/shared/scripts/mc-cleanup >> /var/log/mc-cleanup.log 2>&1
+CRONEOF
+chmod 644 "$CRON_FILE"
+echo "    Installed /etc/cron.d/mc-infra (weekly Docker cleanup)"
+
+# ---------------------------------------------------------------------------
+# 16. Summary
 # ---------------------------------------------------------------------------
 
 echo ""

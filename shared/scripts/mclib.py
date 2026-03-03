@@ -238,6 +238,8 @@ def _build_mc_server(name, server, mod_groups, players):
     env['TYPE'] = config['type']
     env['VERSION'] = config['version']
     env['MEMORY'] = config['memory']
+    env['USE_AIKAR_FLAGS'] = QuotedStr('true')
+    env['REMOVE_OLD_MODS'] = QuotedStr('TRUE')
 
     if config.get('modrinth_version_type', 'release') != 'release':
         env['MODRINTH_ALLOWED_VERSION_TYPE'] = config['modrinth_version_type']
@@ -382,6 +384,11 @@ server {{
 
     include /opt/minecraft/nginx/conf.d/ssl.conf;
 
+    # Gzip compression for BlueMap web assets
+    gzip on;
+    gzip_types text/plain text/css application/javascript application/json image/svg+xml;
+    gzip_min_length 1000;
+
     location / {{
         proxy_pass http://127.0.0.1:{port};
         proxy_set_header Host $host;
@@ -393,6 +400,10 @@ server {{
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection "upgrade";
+
+        # Cache map tiles in the browser
+        expires 1h;
+        add_header Cache-Control "public, no-transform";
     }}
 }}
 """
