@@ -152,7 +152,17 @@ rm -rf ~/dev/hello-fabric
 
 ## Done when
 
-- Can build a Fabric mod on the VPS
-- Can deploy and load a custom mod on the test server
-- Dev workflow is documented (in mc-infra `docs/` and in `~/dev/CLAUDE.md`)
-- `setup.sh` creates `~/dev/` with CLAUDE.md on fresh servers
+- [x] Can build a Fabric mod on the VPS
+- [x] Can deploy and load a custom mod on the test server
+- [x] Dev workflow is documented (in mc-infra `docs/` and in `~/dev/CLAUDE.md`)
+- [x] `setup.sh` creates `~/dev/` with CLAUDE.md on fresh servers
+
+## Verification (2026-03-03)
+
+All verified on the server:
+
+- JDK 21.0.10 confirmed
+- Built `fabric-example-mod` successfully via `./gradlew build`
+- Deployed `modid-1.0.0.jar` to test server — loaded correctly (`modid 1.0.0` in mod list, `Hello Fabric world!` in logs)
+- JAR survived restart (not auto-removed by itzg image)
+- Cleaned up test mod and hello-fabric project
