@@ -27,6 +27,7 @@ The existing "N19 Server" on WiseHosting is separate and not managed here.
 - `setup-ssl.sh` — SSL cert setup via acme-dns (interactive on first run)
 - `.env.tpl` — 1Password secret references (resolved at runtime by `op run`)
 - `servers/<name>/env` — Per-server Minecraft settings (user-editable, not generated)
+- `servers/<name>/data/` — Bind-mounted container filesystem (world data, mods, configs, logs, etc. — live access to running server internals)
 - `acme-dns/` — Dockerfile (builds from source for ARM) and config for self-hosted acme-dns
 - `shared/scripts/mclib.py` — Shared Python library for all management scripts
 - `shared/scripts/` — Management scripts (`mc-create`, `mc-generate`, etc.)

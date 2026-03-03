@@ -89,7 +89,7 @@ timedatectl set-timezone UTC
 
 echo "==> Installing apt packages..."
 apt-get install -y \
-  curl wget jq htop tmux git unzip \
+  curl wget jq htop tmux git unzip tree \
   ufw fail2ban \
   unattended-upgrades apt-listchanges \
   nginx \
