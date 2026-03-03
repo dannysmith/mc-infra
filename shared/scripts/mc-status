@@ -3,6 +3,7 @@
 
 import json
 import os
+import re
 import subprocess
 import sys
 
@@ -58,10 +59,9 @@ def get_player_count(name):
         )
         if result.returncode == 0:
             # Output: "There are X of a max of Y players online: ..."
-            line = result.stdout.strip()
-            if 'There are' in line:
-                parts = line.split()
-                return f"{parts[2]}/{parts[8]}"
+            m = re.search(r'There are (\d+) of a max of (\d+)', result.stdout)
+            if m:
+                return f"{m.group(1)}/{m.group(2)}"
     except (FileNotFoundError, subprocess.TimeoutExpired):
         pass
     return '-'

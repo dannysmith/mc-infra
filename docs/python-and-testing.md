@@ -55,6 +55,8 @@ tests/
                             #   name validation, port assignment, manifest I/O
   test_generate.py          # Compose + nginx generation tests
   test_create_destroy.py    # add_server, remove_server, dir setup, BlueMap EULA
+  test_archive.py           # Archive workflow tests
+  test_world_import.py      # World import (URL, file, copy from server) tests
 ```
 
 Tests use `tmp_path` fixtures for file operations and a `sample_manifest` fixture that mirrors the real manifest structure. No Docker or network access needed — all tests run locally and fast.

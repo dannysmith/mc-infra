@@ -10,7 +10,7 @@ Self-hosted Minecraft server infrastructure on Hetzner Cloud. Runs alongside the
 git clone git@github.com:dannysmith/mc-infra.git /opt/minecraft
 # 3. Run the setup script (as root)
 sudo /opt/minecraft/setup.sh
-# 4. Configure 1Password service account (see docs/requirements.md, section 4)
+# 4. Configure 1Password service account (see docs/server-details.md)
 # 5. If VPS IP changed, update A records in DNSimple:
 #    mc.danny.is, *.mc.danny.is, acme.mc.danny.is → <new-ip>
 # 6. Start the stack (as danny)
@@ -28,7 +28,8 @@ Step 7 is interactive on first run — it registers with acme-dns and asks you t
 ```
 setup.sh                 # Host provisioning (run once on fresh Debian box)
 setup-ssl.sh             # SSL cert setup via acme-dns (interactive on first run)
-docker-compose.yml       # All services: acme-dns, mc-router, MC servers
+manifest.yml             # Source of truth for all server definitions
+docker-compose.yml       # Generated from manifest (do not edit directly)
 .env.tpl                 # 1Password secret references for `op run`
 servers/<name>/env       # Per-server environment overrides
 acme-dns/
@@ -36,21 +37,20 @@ acme-dns/
   config/config.cfg      # acme-dns configuration
 nginx/conf.d/            # Nginx reverse proxy + SSL configs
 shared/
-  modpacks/              # Mod collections (manifests + configs)
   scripts/               # mc-create, mc-status, etc.
   templates/             # Server templates
-docs/                    # Requirements, research, reference
+docs/                    # Architecture docs, task tracking, reference
 ```
 
 ## Key Commands
 
 ```bash
-mc-create --name <name> --type FABRIC --version 1.21.4 --modpack default-fabric --tier ephemeral
+mc-create --name <name> --type FABRIC --version 1.21.4 --mod-group fabric-base --tier ephemeral
 mc-destroy <name>
+mc-archive <name>
 mc-status
 mc-logs <name>
 mc-console <name>
-mc-backup <name>
 ```
 
 ## Domain
@@ -66,7 +66,10 @@ Pending tasks in [`docs/tasks-todo/`](docs/tasks-todo/). Completed tasks moved t
 
 ## Docs
 
+- [Manifest System & Scripts](docs/manifest-and-scripts.md)
 - [DNS, Routing & SSL](docs/dns-and-routing.md)
 - [Server Details](docs/server-details.md)
+- [Dev Workflow](docs/dev-workflow.md)
+- [Python & Testing](docs/python-and-testing.md)
 
 Older planning and research docs are in [`docs/archive/`](docs/archive/).

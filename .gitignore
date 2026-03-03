@@ -5,9 +5,6 @@ servers/*/data/
 shared/backups/
 backups/
 
-# Mod JARs (downloaded by scripts from manifests)
-shared/modpacks/*/mods/*.jar
-
 # Shared mod JARs (non-Modrinth, dev builds, etc.)
 shared/mods/*.jar
 

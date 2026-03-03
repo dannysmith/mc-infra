@@ -51,9 +51,11 @@ Tasks live in `docs/tasks-todo/` and `docs/tasks-done/`.
 
 Work through tasks in priority order (lowest number first). When completing a task, prefix the filename with today's ISO date and move it to `docs/tasks-done/`.
 
-## Management Scripts
+## Scripts
 
-All scripts live in `shared/scripts/` and are on PATH via `~/.bash_aliases`. Python scripts use `mclib.py` for shared logic. See `docs/manifest-and-scripts.md` for full usage details.
+**Management scripts** (`shared/scripts/`) — the `mc-*` commands used on the server. On PATH via `~/.bash_aliases`. Python scripts use `mclib.py` for shared logic. See `docs/manifest-and-scripts.md` for full usage details.
+
+**Development scripts** (`scripts/`) — tooling for working on this repo (e.g. `fetch-itzg-docs` to regenerate reference docs). Not deployed to the server PATH.
 
 | Script                 | Language | Purpose                                                        |
 | ---------------------- | -------- | -------------------------------------------------------------- |
