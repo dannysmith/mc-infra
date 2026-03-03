@@ -65,6 +65,24 @@ services:
           memory: 5g
           cpus: "2.0"
     restart: unless-stopped
+  creative-backups:
+    image: itzg/mc-backup
+    container_name: creative-backups
+    depends_on:
+      creative:
+        condition: service_healthy
+    environment:
+      RCON_HOST: creative
+      RCON_PASSWORD: ${RCON_PASSWORD:-changeme}
+      BACKUP_INTERVAL: "24h"
+      INITIAL_DELAY: "2m"
+      PRUNE_BACKUPS_COUNT: "3"
+    volumes:
+    - ./servers/creative/data:/data:ro
+    - ./backups/creative:/backups
+    networks:
+    - minecraft-net
+    restart: unless-stopped
   test:
     image: itzg/minecraft-server
     container_name: test

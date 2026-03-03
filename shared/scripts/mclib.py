@@ -305,6 +305,31 @@ def _build_mc_server(name, server, mod_groups, players):
     return service
 
 
+def _build_backup_sidecar(name, server):
+    """Build a backup sidecar service for a MC server."""
+    backup = server['backup']
+    return {
+        'image': 'itzg/mc-backup',
+        'container_name': f'{name}-backups',
+        'depends_on': {
+            name: {'condition': 'service_healthy'},
+        },
+        'environment': {
+            'RCON_HOST': name,
+            'RCON_PASSWORD': '${RCON_PASSWORD:-changeme}',
+            'BACKUP_INTERVAL': QuotedStr(str(backup['interval'])),
+            'INITIAL_DELAY': QuotedStr('2m'),
+            'PRUNE_BACKUPS_COUNT': QuotedStr(str(backup['keep'])),
+        },
+        'volumes': [
+            f'./servers/{name}/data:/data:ro',
+            f'./backups/{name}:/backups',
+        ],
+        'networks': ['minecraft-net'],
+        'restart': 'unless-stopped',
+    }
+
+
 def generate_compose(manifest):
     """Generate complete docker-compose.yml content from manifest."""
     servers = manifest['servers']
@@ -317,11 +342,15 @@ def generate_compose(manifest):
     compose['services']['acme-dns'] = _build_acme_dns()
     compose['services']['mc-router'] = _build_mc_router(servers)
 
-    # MC servers
+    # MC servers + backup sidecars
     for name, server in servers.items():
         compose['services'][name] = _build_mc_server(
             name, server, mod_groups, players
         )
+        if server.get('backup'):
+            compose['services'][f'{name}-backups'] = _build_backup_sidecar(
+                name, server
+            )
 
     # Networks
     compose['networks'] = {

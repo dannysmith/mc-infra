@@ -3,6 +3,7 @@ servers/*/data/
 
 # Local backups
 shared/backups/
+backups/
 
 # Mod JARs (downloaded by scripts from manifests)
 shared/modpacks/*/mods/*.jar

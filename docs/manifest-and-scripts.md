@@ -69,6 +69,7 @@ Named lists of Modrinth project slugs. Defined once, referenced by multiple serv
 | `svc`                   | `false`           | Whether Simple Voice Chat UDP port is mapped to this server |
 | `seed`                  | `null`            | World seed (quote negative values)                          |
 | `motd`                  | `"<Name> Server"` | Server MOTD                                                 |
+| `backup`                | none              | Backup config (see Backups below). Auto-added for permanent tier by mc-create |
 | `created`               | auto-set          | Creation date (set by mc-create)                            |
 
 ### Tiers
@@ -92,6 +93,29 @@ Three ways to get mods onto a server:
 3. **JAR mods** — filenames from `shared/mods/` in `jar_mods:`. The directory is mounted read-only into the container. Used for non-Modrinth mods, dev builds, or specific versions.
 
 The generator merges groups + modrinth mods into `MODRINTH_PROJECTS`, and sets up volume mounts + `MODS` env var for JAR mods.
+
+### Backups
+
+Servers with a `backup:` block in the manifest get an `itzg/docker-mc-backup` sidecar container generated in `docker-compose.yml`. The sidecar handles scheduling, safe save coordination, compression, and pruning.
+
+```yaml
+servers:
+  creative:
+    backup:
+      interval: 24h   # How often to back up (supports: 1h, 6h, 1d, etc.)
+      keep: 3          # Number of backups to retain
+```
+
+**How it works:** The backup sidecar shares the MC server's `/data` volume (read-only) and uses RCON to safely pause writes during backup (`save-off` -> `save-all` -> backup -> `save-on`). Backups are compressed `.tgz` archives stored in `backups/<server-name>/`. JARs, cache, logs, and tmp files are excluded by default.
+
+**Defaults from mc-create:** When creating a server with `--tier permanent`, backup config is auto-added (`interval: 24h, keep: 3`). Other tiers don't get backups by default — add a `backup:` block manually in the manifest if needed.
+
+**Restoring from a backup:**
+
+1. Stop the server: `mc-stop <name>`
+2. Remove current data: `rm -rf servers/<name>/data/*`
+3. Extract: `tar xzf backups/<name>/<backup-file>.tgz -C servers/<name>/data/ --strip-components=1`
+4. Start the server: `mc-start <name>`
 
 ---
 

@@ -41,6 +41,7 @@ def sample_manifest():
                 'svc': True,
                 'seed': None,
                 'motd': 'Creative Server',
+                'backup': {'interval': '24h', 'keep': 3},
                 'created': '2026-02-22',
             },
             'test': {

@@ -87,6 +87,10 @@ def main():
     if args.no_bluemap:
         config['bluemap'] = False
 
+    # Backup defaults for permanent tier
+    if args.tier == 'permanent':
+        config['backup'] = {'interval': '24h', 'keep': 3}
+
     # World import: URL goes straight into manifest; local file gets copied first
     if args.world:
         if mclib.is_url(args.world):

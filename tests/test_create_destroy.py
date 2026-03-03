@@ -70,6 +70,23 @@ class TestAddServer:
         assert server['bluemap'] is False
         assert 'bluemap_port' not in server
 
+    def test_backup_config_preserved(self, sample_manifest):
+        """Backup config passed via mc-create is preserved in manifest."""
+        mclib.add_server(sample_manifest, 'survival', {
+            'tier': 'permanent',
+            'backup': {'interval': '24h', 'keep': 3},
+        })
+        server = sample_manifest['servers']['survival']
+        assert server['backup'] == {'interval': '24h', 'keep': 3}
+
+    def test_ephemeral_no_backup(self, sample_manifest):
+        """Ephemeral servers don't get backup config by default."""
+        mclib.add_server(sample_manifest, 'survival', {
+            'tier': 'ephemeral',
+        })
+        server = sample_manifest['servers']['survival']
+        assert 'backup' not in server
+
 
 # ---------------------------------------------------------------------------
 # mc-destroy: remove_server

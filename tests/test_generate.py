@@ -259,6 +259,90 @@ class TestComposeMcServer:
 
 
 # ---------------------------------------------------------------------------
+# Compose generation — backup sidecars
+# ---------------------------------------------------------------------------
+
+class TestComposeBackupSidecars:
+    def test_backup_sidecar_generated(self, sample_manifest):
+        """creative has backup config, should get a sidecar."""
+        compose = yaml.safe_load(mclib.generate_compose(sample_manifest))
+        assert 'creative-backups' in compose['services']
+
+    def test_no_sidecar_without_backup_config(self, sample_manifest):
+        """test has no backup config, should not get a sidecar."""
+        compose = yaml.safe_load(mclib.generate_compose(sample_manifest))
+        assert 'test-backups' not in compose['services']
+
+    def test_sidecar_image_and_network(self, sample_manifest):
+        compose = yaml.safe_load(mclib.generate_compose(sample_manifest))
+        sidecar = compose['services']['creative-backups']
+        assert sidecar['image'] == 'itzg/mc-backup'
+        assert 'minecraft-net' in sidecar['networks']
+        assert sidecar['restart'] == 'unless-stopped'
+
+    def test_sidecar_container_name(self, sample_manifest):
+        compose = yaml.safe_load(mclib.generate_compose(sample_manifest))
+        sidecar = compose['services']['creative-backups']
+        assert sidecar['container_name'] == 'creative-backups'
+
+    def test_sidecar_depends_on(self, sample_manifest):
+        compose = yaml.safe_load(mclib.generate_compose(sample_manifest))
+        sidecar = compose['services']['creative-backups']
+        assert sidecar['depends_on'] == {
+            'creative': {'condition': 'service_healthy'},
+        }
+
+    def test_sidecar_environment(self, sample_manifest):
+        compose = yaml.safe_load(mclib.generate_compose(sample_manifest))
+        env = compose['services']['creative-backups']['environment']
+        assert env['RCON_HOST'] == 'creative'
+        assert env['RCON_PASSWORD'] == '${RCON_PASSWORD:-changeme}'
+        assert env['BACKUP_INTERVAL'] == '24h'
+        assert env['INITIAL_DELAY'] == '2m'
+        assert env['PRUNE_BACKUPS_COUNT'] == '3'
+
+    def test_sidecar_volumes(self, sample_manifest):
+        compose = yaml.safe_load(mclib.generate_compose(sample_manifest))
+        volumes = compose['services']['creative-backups']['volumes']
+        assert './servers/creative/data:/data:ro' in volumes
+        assert './backups/creative:/backups' in volumes
+
+    def test_custom_interval_and_keep(self):
+        """Non-default backup settings from manifest."""
+        manifest = {
+            'players': {'ops': ['d2683803'], 'whitelist': ['d2683803']},
+            'mod_groups': {},
+            'servers': {
+                'custom': {
+                    'type': 'FABRIC',
+                    'version': 'LATEST',
+                    'mode': 'survival',
+                    'memory': '4G',
+                    'tier': 'permanent',
+                    'mod_groups': [],
+                    'modrinth_mods': [],
+                    'jar_mods': [],
+                    'svc': False,
+                    'seed': None,
+                    'motd': 'Custom Server',
+                    'backup': {'interval': '6h', 'keep': 7},
+                },
+            },
+        }
+        compose = yaml.safe_load(mclib.generate_compose(manifest))
+        env = compose['services']['custom-backups']['environment']
+        assert env['BACKUP_INTERVAL'] == '6h'
+        assert env['PRUNE_BACKUPS_COUNT'] == '7'
+
+    def test_sidecar_ordered_after_server(self, sample_manifest):
+        """Backup sidecar should appear after its server in the compose output."""
+        raw = mclib.generate_compose(sample_manifest)
+        server_pos = raw.index('creative:')
+        sidecar_pos = raw.index('creative-backups:')
+        assert server_pos < sidecar_pos
+
+
+# ---------------------------------------------------------------------------
 # Nginx generation
 # ---------------------------------------------------------------------------
 
