@@ -32,13 +32,15 @@ The existing "N19 Server" on WiseHosting is separate and not managed here.
 - `shared/scripts/mclib.py` — Shared Python library for all management scripts
 - `shared/scripts/` — Management scripts (`mc-create`, `mc-generate`, etc.)
 - `shared/mods/` — Shared JAR files for non-Modrinth mods
-- `shared/templates/` — Templates for new server creation
+- `shared/templates/` — Templates for new server creation (including `dev-claude.md` for `~/dev/CLAUDE.md`)
 - `nginx/conf.d/` — Nginx reverse proxy and SSL configs
 - `docs/` — Reference docs (see `docs/manifest-and-scripts.md` for the manifest system, `docs/dns-and-routing.md` for routing/SSL)
+- `~/dev/` — Mod development workspace on the server (separate from mc-infra, created by `setup.sh`)
 
 ## Reference Docs
 
 - `docs/reference/itzg-docker-minecraft-server.md` — **Generated** full documentation for the `itzg/minecraft-server` Docker image. Regenerate with `scripts/fetch-itzg-docs`. Gitignored — run the script locally or on the server to create it. Use this as a comprehensive reference for all available environment variables, server types, mod/plugin configuration, and features.
+- `docs/dev-workflow.md` — Fabric mod development workflow (dev → test → production lifecycle)
 
 ## Task Management
 

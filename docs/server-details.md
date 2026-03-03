@@ -69,3 +69,4 @@ Secrets are referenced in `.env.tpl` using `op://MC Server/...` URIs and injecte
 **Development:**
 - OpenJDK 21 (headless — for Fabric mod development / Gradle)
 - Bun, uv, GitHub CLI, Claude Code (installed as user `danny`)
+- `~/dev/` — mod development workspace with `CLAUDE.md` (see `docs/dev-workflow.md`)

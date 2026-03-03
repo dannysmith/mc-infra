@@ -312,15 +312,26 @@ else
 fi
 
 # ---------------------------------------------------------------------------
-# 13. Configure bash environment
+# 13. Dev workspace
+# ---------------------------------------------------------------------------
+
+echo "==> Setting up dev workspace..."
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+DANNY_DEV_DIR="/home/danny/dev"
+mkdir -p "$DANNY_DEV_DIR"
+cp "$SCRIPT_DIR/shared/templates/dev-claude.md" "$DANNY_DEV_DIR/CLAUDE.md"
+chown -R danny:danny "$DANNY_DEV_DIR"
+echo "    Created ~/dev/ with CLAUDE.md"
+
+# ---------------------------------------------------------------------------
+# 14. Configure bash environment
 # ---------------------------------------------------------------------------
 
 echo "==> Configuring bash environment for danny..."
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 bash "$SCRIPT_DIR/configure-bash.sh" danny
 
 # ---------------------------------------------------------------------------
-# 14. Summary
+# 15. Summary
 # ---------------------------------------------------------------------------
 
 echo ""
