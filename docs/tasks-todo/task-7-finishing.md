@@ -1,11 +1,4 @@
-# Task: Finishing Up - Cleanup & Testing
-
-## Phase 1 - Cleanup
-
-- [ ] Check for any files or directories in this repo which we don't need anymore.
-- [ ] Review all code for "cleanness" - anything we can tody up without affecting hwo things work?
-- [ ] Review all docs in `docs/` plus README.md and AGENTS.md for correctness and coherence with each other.
-- [ ] Anything else to clean up in this repo?
+# Task: Finishing Up - Testing
 
 ## Phase 2 - Manual Testing on the Server
 
