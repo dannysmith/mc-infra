@@ -443,10 +443,11 @@ mc-create --name creative-v2 --world-from creative
 - ✅ All lifecycle scripts work: start, stop, status, logs, console
 - ✅ `mc-status` gives a clear overview of all servers
 
-### Phase 3c
+### Phase 3c ✅
 - ✅ Can archive a server's world data before destroying
 - ✅ Can import worlds from files/URLs/other servers (delegated to itzg WORLD env var)
 - ✅ Protection levels enforced on destroy and archive
+- ✅ 105 passing tests covering all core logic
 
 ---
 
