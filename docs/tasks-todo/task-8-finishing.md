@@ -58,6 +58,8 @@ For each server we create, verify:
    - `mc-destroy test` (ephemeral tier)
 5. Verify manifest is empty, compose regenerated, nginx reloaded
 
+**Note on resources:** The server has 8GB RAM. Running all three target servers simultaneously would exceed this (5g + 4g + 3g = 12g in container limits). Stop running servers before starting new ones during testing. If you want multiple servers running long-term, upgrade the Hetzner plan.
+
 #### Phase B: Smoke Test — Basic Lifecycle
 
 Purpose: quickly validate the core create/start/stop/archive loop before building real servers.
