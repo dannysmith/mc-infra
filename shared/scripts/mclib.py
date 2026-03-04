@@ -270,6 +270,20 @@ def _build_mc_server(name, server, mod_groups, players):
         bm_port = config.get('bluemap_port', BLUEMAP_PORT_BASE)
         ports.append(QuotedStr(f'127.0.0.1:{bm_port}:8100'))
 
+    # Pre-generation (Chunky)
+    pregen = config.get('pregen')
+    if pregen:
+        radius = pregen['radius']
+        # Add chunky to modrinth mods
+        if 'chunky' not in resolved_mods:
+            resolved_mods.append('chunky')
+            env['MODRINTH_PROJECTS'] = LiteralStr('\n'.join(resolved_mods) + '\n')
+        env['RCON_CMDS_STARTUP'] = LiteralStr(
+            f'chunky spawn\nchunky radius {radius}\n'
+        )
+        env['RCON_CMDS_FIRST_CONNECT'] = LiteralStr('chunky start\n')
+        env['RCON_CMDS_LAST_DISCONNECT'] = LiteralStr('chunky pause\n')
+
     # World import
     world = config.get('world')
     if world:

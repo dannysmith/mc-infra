@@ -87,6 +87,20 @@ class TestAddServer:
         server = sample_manifest['servers']['survival']
         assert 'backup' not in server
 
+    def test_pregen_config_preserved(self, sample_manifest):
+        """Pregen config passed via mc-create is preserved in manifest."""
+        mclib.add_server(sample_manifest, 'survival', {
+            'pregen': {'radius': 5000},
+        })
+        server = sample_manifest['servers']['survival']
+        assert server['pregen'] == {'radius': 5000}
+
+    def test_no_pregen_by_default(self, sample_manifest):
+        """Servers don't get pregen config by default."""
+        mclib.add_server(sample_manifest, 'survival', {})
+        server = sample_manifest['servers']['survival']
+        assert 'pregen' not in server
+
 
 # ---------------------------------------------------------------------------
 # mc-destroy: remove_server

@@ -70,6 +70,7 @@ Named lists of Modrinth project slugs. Defined once, referenced by multiple serv
 | `seed`                  | `null`            | World seed (quote negative values)                          |
 | `motd`                  | `"<Name> Server"` | Server MOTD                                                 |
 | `backup`                | none              | Backup config (see Backups below). Auto-added for permanent tier by mc-create |
+| `pregen`                | none              | Pre-generation config (see Pre-generation below)            |
 | `created`               | auto-set          | Creation date (set by mc-create)                            |
 
 ### Tiers
@@ -117,6 +118,23 @@ servers:
 3. Extract: `tar xzf backups/<name>/<backup-file>.tgz -C servers/<name>/data/ --strip-components=1`
 4. Start the server: `mc-start <name>`
 
+### Pre-generation
+
+Servers with a `pregen:` block get [Chunky](https://modrinth.com/mod/chunky) auto-installed and RCON lifecycle hooks configured to pre-generate chunks while a player is connected.
+
+```yaml
+servers:
+  survival:
+    pregen:
+      radius: 5000   # Blocks from world spawn
+```
+
+**How it works:** Chunky parameters are set on server startup via `RCON_CMDS_STARTUP` (center = world spawn, radius from config). Generation starts when the first player connects (`RCON_CMDS_FIRST_CONNECT`) and pauses when the last player disconnects (`RCON_CMDS_LAST_DISCONNECT`). Reconnecting resumes generation.
+
+**Workflow:** Log in, go to spectator mode, wait for Chunky to finish. DH builds LODs and BlueMap renders incrementally while you're connected. Monitor progress via `mc-logs`.
+
+**Post-completion:** The pregen block is harmless after completion — Chunky's start command is a no-op when all chunks exist. Optionally remove the block and re-generate to clean up.
+
 ---
 
 ## Management Scripts
@@ -146,6 +164,7 @@ mc-create --name <name> [options]
 | `--motd`          | `"<Name> Server"` | Server MOTD                                                |
 | `--no-bluemap`    | —                 | Disable BlueMap even if mods include it                    |
 | `--svc`           | —                 | Enable SVC port mapping (validates no other server has it) |
+| `--pregen`        | none              | Pre-generate chunks (optional radius in blocks, default 3000) |
 | `--world`         | none              | Import world from local file or URL (uses itzg WORLD env)  |
 | `--world-from`    | none              | Copy world data from another server                        |
 

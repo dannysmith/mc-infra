@@ -269,6 +269,82 @@ class TestComposeMcServer:
 
 
 # ---------------------------------------------------------------------------
+# Compose generation — pre-generation (Chunky)
+# ---------------------------------------------------------------------------
+
+class TestComposePregen:
+    def _manifest_with_pregen(self, radius=5000):
+        return {
+            'players': {'ops': ['d2683803'], 'whitelist': ['d2683803']},
+            'mod_groups': {'fabric-base': ['fabric-api', 'lithium']},
+            'servers': {
+                'survival': {
+                    'type': 'FABRIC',
+                    'version': 'LATEST',
+                    'mode': 'survival',
+                    'memory': '4G',
+                    'tier': 'semi-permanent',
+                    'mod_groups': ['fabric-base'],
+                    'modrinth_mods': [],
+                    'jar_mods': [],
+                    'svc': False,
+                    'seed': None,
+                    'motd': 'Survival Server',
+                    'pregen': {'radius': radius},
+                },
+            },
+        }
+
+    def test_chunky_added_to_modrinth_projects(self):
+        manifest = self._manifest_with_pregen()
+        compose = yaml.safe_load(mclib.generate_compose(manifest))
+        projects = compose['services']['survival']['environment']['MODRINTH_PROJECTS']
+        mods = [m.strip() for m in projects.strip().split('\n')]
+        assert 'chunky' in mods
+
+    def test_chunky_not_duplicated_if_already_present(self):
+        manifest = self._manifest_with_pregen()
+        manifest['servers']['survival']['modrinth_mods'] = ['chunky']
+        compose = yaml.safe_load(mclib.generate_compose(manifest))
+        projects = compose['services']['survival']['environment']['MODRINTH_PROJECTS']
+        mods = [m.strip() for m in projects.strip().split('\n')]
+        assert mods.count('chunky') == 1
+
+    def test_rcon_cmds_startup(self):
+        manifest = self._manifest_with_pregen(5000)
+        compose = yaml.safe_load(mclib.generate_compose(manifest))
+        env = compose['services']['survival']['environment']
+        cmds = env['RCON_CMDS_STARTUP']
+        assert 'chunky spawn' in cmds
+        assert 'chunky radius 5000' in cmds
+
+    def test_rcon_cmds_first_connect(self):
+        manifest = self._manifest_with_pregen()
+        compose = yaml.safe_load(mclib.generate_compose(manifest))
+        env = compose['services']['survival']['environment']
+        assert 'chunky start' in env['RCON_CMDS_FIRST_CONNECT']
+
+    def test_rcon_cmds_last_disconnect(self):
+        manifest = self._manifest_with_pregen()
+        compose = yaml.safe_load(mclib.generate_compose(manifest))
+        env = compose['services']['survival']['environment']
+        assert 'chunky pause' in env['RCON_CMDS_LAST_DISCONNECT']
+
+    def test_no_rcon_cmds_without_pregen(self, sample_manifest):
+        compose = yaml.safe_load(mclib.generate_compose(sample_manifest))
+        env = compose['services']['creative']['environment']
+        assert 'RCON_CMDS_STARTUP' not in env
+        assert 'RCON_CMDS_FIRST_CONNECT' not in env
+        assert 'RCON_CMDS_LAST_DISCONNECT' not in env
+
+    def test_custom_radius(self):
+        manifest = self._manifest_with_pregen(1500)
+        compose = yaml.safe_load(mclib.generate_compose(manifest))
+        env = compose['services']['survival']['environment']
+        assert 'chunky radius 1500' in env['RCON_CMDS_STARTUP']
+
+
+# ---------------------------------------------------------------------------
 # Compose generation — backup sidecars
 # ---------------------------------------------------------------------------
 

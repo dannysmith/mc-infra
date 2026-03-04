@@ -44,6 +44,9 @@ def parse_args():
     p.add_argument('--motd', default=None, help='Server MOTD')
     p.add_argument('--no-bluemap', action='store_true', help='Disable BlueMap')
     p.add_argument('--svc', action='store_true', help='Enable Simple Voice Chat port')
+    p.add_argument('--pregen', nargs='?', const=3000, type=int, default=None,
+                   metavar='RADIUS',
+                   help='Pre-generate chunks (radius in blocks, default 3000)')
     p.add_argument('--world', default=None,
                    help='World archive (local path or URL) — imported via itzg WORLD env var')
     p.add_argument('--world-from', default=None,
@@ -86,6 +89,8 @@ def main():
         config['motd'] = args.motd
     if args.no_bluemap:
         config['bluemap'] = False
+    if args.pregen:
+        config['pregen'] = {'radius': args.pregen}
 
     # Backup defaults for permanent tier
     if args.tier == 'permanent':
@@ -149,6 +154,8 @@ def main():
         print(f"  World:    imported via itzg WORLD env var on first start")
     if args.world_from:
         print(f"  World:    copied from '{args.world_from}'")
+    if server.get('pregen'):
+        print(f"  Pre-gen:  {server['pregen']['radius']} block radius (starts on first connect)")
     print(f"  Env file: servers/{args.name}/env")
     print(f"\nNext steps:")
     print(f"  1. Review/edit servers/{args.name}/env")
