@@ -281,7 +281,7 @@ def _build_mc_server(name, server, mod_groups, players):
         env['RCON_CMDS_STARTUP'] = LiteralStr(
             f'chunky spawn\nchunky radius {radius}\n'
         )
-        env['RCON_CMDS_FIRST_CONNECT'] = LiteralStr('chunky start\n')
+        env['RCON_CMDS_FIRST_CONNECT'] = LiteralStr('chunky continue\nchunky start\n')
         env['RCON_CMDS_LAST_DISCONNECT'] = LiteralStr('chunky pause\n')
 
     # World import

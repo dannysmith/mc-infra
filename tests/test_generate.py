@@ -322,7 +322,9 @@ class TestComposePregen:
         manifest = self._manifest_with_pregen()
         compose = yaml.safe_load(mclib.generate_compose(manifest))
         env = compose['services']['survival']['environment']
-        assert 'chunky start' in env['RCON_CMDS_FIRST_CONNECT']
+        cmds = env['RCON_CMDS_FIRST_CONNECT']
+        assert 'chunky continue' in cmds
+        assert 'chunky start' in cmds
 
     def test_rcon_cmds_last_disconnect(self):
         manifest = self._manifest_with_pregen()

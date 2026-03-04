@@ -129,7 +129,7 @@ servers:
       radius: 5000   # Blocks from world spawn
 ```
 
-**How it works:** Chunky parameters are set on server startup via `RCON_CMDS_STARTUP` (center = world spawn, radius from config). Generation starts when the first player connects (`RCON_CMDS_FIRST_CONNECT`) and pauses when the last player disconnects (`RCON_CMDS_LAST_DISCONNECT`). Reconnecting resumes generation.
+**How it works:** Chunky parameters are set on server startup via `RCON_CMDS_STARTUP` (center = world spawn, radius from config). Generation starts when the first player connects (`RCON_CMDS_FIRST_CONNECT`) and pauses when the last player disconnects (`RCON_CMDS_LAST_DISCONNECT`). On reconnect, `chunky continue` resumes the paused task (followed by `chunky start` as a fallback for fresh tasks).
 
 **Workflow:** Log in, go to spectator mode, wait for Chunky to finish. DH builds LODs and BlueMap renders incrementally while you're connected. Monitor progress via `mc-logs`.
 
