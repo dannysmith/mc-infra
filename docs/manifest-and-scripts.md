@@ -164,7 +164,7 @@ mc-create --name <name> [options]
 | `--motd`          | `"<Name> Server"` | Server MOTD                                                |
 | `--no-bluemap`    | —                 | Disable BlueMap even if mods include it                    |
 | `--svc`           | —                 | Enable SVC port mapping (validates no other server has it) |
-| `--pregen`        | none              | Pre-generate chunks (optional radius in blocks, default 3000) |
+| `--pregen`        | none              | Pre-generate chunks (optional radius in blocks, default 1500) |
 | `--world`         | none              | Import world from local file or URL (uses itzg WORLD env)  |
 | `--world-from`    | none              | Copy world data from another server                        |
 

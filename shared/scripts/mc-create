@@ -44,9 +44,9 @@ def parse_args():
     p.add_argument('--motd', default=None, help='Server MOTD')
     p.add_argument('--no-bluemap', action='store_true', help='Disable BlueMap')
     p.add_argument('--svc', action='store_true', help='Enable Simple Voice Chat port')
-    p.add_argument('--pregen', nargs='?', const=3000, type=int, default=None,
+    p.add_argument('--pregen', nargs='?', const=1500, type=int, default=None,
                    metavar='RADIUS',
-                   help='Pre-generate chunks (radius in blocks, default 3000)')
+                   help='Pre-generate chunks (radius in blocks, default 1500)')
     p.add_argument('--world', default=None,
                    help='World archive (local path or URL) — imported via itzg WORLD env var')
     p.add_argument('--world-from', default=None,
