@@ -113,12 +113,13 @@ def main():
     # Save manifest
     mclib.save_manifest(manifest, manifest_path)
 
+    # Create server directory + env (before mc-generate, which validates
+    # the compose and needs the env_file to exist)
+    mclib.setup_server_dir(root, args.name, template_path)
+
     # Run mc-generate
     generate_script = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'mc-generate')
     subprocess.run([sys.executable, generate_script], check=True)
-
-    # Create server directory + env
-    mclib.setup_server_dir(root, args.name, template_path)
 
     # Copy world data from another server
     if args.world_from:
