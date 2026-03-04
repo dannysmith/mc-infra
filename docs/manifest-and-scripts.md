@@ -63,7 +63,7 @@ Named lists of Modrinth project slugs. Defined once, referenced by multiple serv
 | `mod_groups`            | `[]`              | Which named mod groups to include                           |
 | `modrinth_mods`         | `[]`              | Additional Modrinth slugs (supports `slug:version` pinning) |
 | `jar_mods`              | `[]`              | Filenames from `shared/mods/`                               |
-| `modrinth_version_type` | `release`         | Modrinth release channel: release, beta, alpha              |
+| `modrinth_version_type` | `beta`            | Modrinth release channel: release, beta, alpha              |
 | `bluemap`               | auto-detected     | Whether BlueMap is enabled (inferred from mods if not set)  |
 | `bluemap_port`          | auto-assigned     | Localhost port for BlueMap web UI (8100, 8101, ...)         |
 | `svc`                   | `false`           | Whether Simple Voice Chat UDP port is mapped to this server |

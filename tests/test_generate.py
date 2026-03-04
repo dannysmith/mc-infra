@@ -135,12 +135,12 @@ class TestComposeMcServer:
 
     def test_modrinth_version_type(self, sample_manifest):
         compose = yaml.safe_load(mclib.generate_compose(sample_manifest))
-        # creative has modrinth_version_type: beta
+        # creative has modrinth_version_type: beta (explicit)
         creative_env = compose['services']['creative']['environment']
         assert creative_env['MODRINTH_ALLOWED_VERSION_TYPE'] == 'beta'
-        # test uses default (release), so key should be absent
+        # test uses default (now beta), so key should also be present
         test_env = compose['services']['test']['environment']
-        assert 'MODRINTH_ALLOWED_VERSION_TYPE' not in test_env
+        assert test_env['MODRINTH_ALLOWED_VERSION_TYPE'] == 'beta'
 
     def test_players(self, sample_manifest):
         compose = yaml.safe_load(mclib.generate_compose(sample_manifest))

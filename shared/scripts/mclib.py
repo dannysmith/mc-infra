@@ -25,7 +25,7 @@ DEFAULTS = {
     'mod_groups': [],
     'modrinth_mods': [],
     'jar_mods': [],
-    'modrinth_version_type': 'release',
+    'modrinth_version_type': 'beta',
     'svc': False,
     'seed': None,
     'motd': None,
