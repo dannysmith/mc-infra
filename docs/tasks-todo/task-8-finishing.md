@@ -6,32 +6,155 @@ When phase 1 is done we'll push/pull to the server. We should then test out our 
 
 KEY POINT: Neither of the two servers which currently exist in the manifest are important to me. I'm fine for both to be removed/destroyed as part of this testing process.
 
-We should test with various seeds and minecraft settings, and also with and without the fabric-base mod-group, and with and without bluemap and distant horizons.
-We should also test with an "in-dev" mod (ie cloned into `~/dev/<modname>` and the built jar copied direct to the data/mods of a server). I have a very WIP (and possibly broken) bluemap Mod at https://github.com/dannysmith/mc-bluemap-structures which we can clone for this test.
-
-There'll be a bunch ofother things we should test too.
-
-For each NEW world we create we should certainally:
-
-- Check the manifest.yml and docker-compose.yml look right, and also any other generated files (eg bluemap nginx)
-- Check the logs using our `mc-logs` command.
-- Actually connect in minecraft using the correct URL/subdomain
-- If bluemap is included, check the `<name>-map.mc.danny.is` works ok.
-- If any server mods bar the standard ones, DH and bluemap are incuded, check that they load properly and seem t work.
-- Check our various `mc-` commands work (logs, start etc)
-
 ### End State
 
-Let's aim to end up with three worlds in the manifest (all latest MC version/Fabric with our standard plugin set):
+Three servers in the manifest (all latest MC version/Fabric with fabric-base mod group):
 
-1. Creative - Fabric, Permenant, Superflat world made from sandstone with ~100 blocks of ground and no structures (with Bluemap and DH)
-2. N19 Seed - Fabric, semi-permenant, seed 493527618652710797 with bluemap & DH on.
-3. BMDev - Fabric, ephemeral, random seed with bluemap on & the latest jar from https://github.com/dannysmith/mc-bluemap-structures copied to its `mods/`.
+1. **Creative** — Permanent, superflat sandstone (~100 blocks deep, no structures), Bluemap, DH, SVC, backups enabled
+2. **N19** — Semi-permanent, seed `493527618652710797`, Bluemap, DH, pregen (default radius)
+3. **BMDev** — Ephemeral, random seed, Bluemap, with dev JAR from [mc-bluemap-structures](https://github.com/dannysmith/mc-bluemap-structures) copied to `data/mods/`
 
-### Checklist: Commands Tested
+### Per-Server Verification Checklist
 
-- [ ] TBD
+For each server we create, verify:
+
+- [ ] `manifest.yml` entry looks correct
+- [ ] `docker-compose.yml` service looks correct (env vars, ports, volumes, resource limits)
+- [ ] If BlueMap: `nginx/conf.d/bluemap.conf` has the right server block
+- [ ] `mc-logs <name>` shows clean startup, all mods loaded
+- [ ] `mc-status` shows the server running with correct tier/address
+- [ ] `mc-console <name>` works (run `list` to check RCON)
+- [ ] Connect in Minecraft client via `<name>.mc.danny.is` — verify world type, game mode, seed
+- [ ] If BlueMap: `map-<name>.mc.danny.is` loads in browser and renders after exploring
+- [ ] If DH: Distant Horizons LODs start building while connected
+- [ ] Ops and whitelist are working (Danny is OP, both players whitelisted)
+
+### Commands Tested
+
+- [ ] `mc-create` (basic)
+- [ ] `mc-create` with `--seed`, `--pregen`, `--svc`, `--modrinth-mods`, `--tier`, `--mode`
+- [ ] `mc-start <name>` (single server)
+- [ ] `mc-stop <name>` (single server)
+- [ ] `mc-status`
+- [ ] `mc-logs <name>`
+- [ ] `mc-console <name>`
+- [ ] `mc-generate` (after manual manifest edit)
+- [ ] `mc-archive <name>`
+- [ ] `mc-destroy` tier enforcement (semi-permanent without `--confirm`, permanent without `--force`)
+- [ ] `mc-destroy <name>` (ephemeral, immediate)
+- [ ] Manual env file edit + restart
+
+---
 
 ### Step-by-step Plan
 
-TBD
+#### Phase A: Preparation
+
+1. Push any local changes and pull on the server
+2. Change the default pregen radius in `mc-create` from 3000 to 1500 blocks (commit + push) — **DONE**
+3. Run `mc-cleanup` on the server to prune unused Docker images
+4. Destroy both existing servers:
+   - `mc-destroy creative --force` (permanent tier)
+   - `mc-destroy test` (ephemeral tier)
+5. Verify manifest is empty, compose regenerated, nginx reloaded
+
+#### Phase B: Smoke Test — Basic Lifecycle
+
+Purpose: quickly validate the core create/start/stop/archive loop before building real servers.
+
+1. Create a minimal ephemeral server:
+   ```
+   mc-create --name smoketest --no-bluemap
+   ```
+2. Review `manifest.yml` and `docker-compose.yml` — check the entry looks right
+3. Start it: `mc-start smoketest`
+4. Check logs: `mc-logs smoketest` — wait for clean startup
+5. Check status: `mc-status`
+6. Test RCON: `mc-console smoketest` — run `list`, exit
+7. Connect in Minecraft client to `smoketest.mc.danny.is` — verify creative mode, normal world
+8. Stop it: `mc-stop smoketest`
+9. Archive it: `mc-archive smoketest`
+10. Verify: archive exists in `shared/backups/`, server removed from manifest, `docker-compose.yml` regenerated
+
+#### Phase C: N19 Server (Semi-permanent)
+
+Purpose: test seed, pregen, semi-permanent tier, mod groups + extra modrinth mods, bluemap + DH.
+
+1. Create:
+   ```
+   mc-create --name n19 --tier semi-permanent --seed 493527618652710797 --modrinth-mods bluemap,distanthorizons --pregen
+   ```
+2. Review generated files: `manifest.yml`, `docker-compose.yml`, `nginx/conf.d/bluemap.conf`
+3. Reload nginx: `sudo nginx -t && sudo systemctl reload nginx`
+4. Start: `mc-start n19`
+5. Check logs: `mc-logs n19` — verify all mods loaded, Chunky parameters set
+6. Run per-server verification checklist (see above)
+7. Connect in Minecraft, switch to spectator mode, stay connected for a while to let Chunky pregen, DH build LODs, and BlueMap start rendering
+8. Check `map-n19.mc.danny.is` in browser
+9. **Test tier enforcement:** try `mc-destroy n19` (no flags) — should fail requiring `--confirm`
+10. **Test world persistence + manual manifest edit:** Place a few recognisable blocks in the world (e.g. a small structure near spawn). Then edit `manifest.yml` to add or remove a mod from N19's `modrinth_mods`, run `mc-generate`, restart (`mc-stop n19 && mc-start n19`), check logs to verify the mod change took effect, reconnect and confirm your placed blocks are still there. Do a couple more stop/start cycles to be sure. Then revert the manifest edit, re-generate, and restart.
+
+#### Phase D: Creative Server (Permanent, Superflat)
+
+Purpose: test permanent tier, backup sidecar, SVC port mapping, env file customisation for superflat world.
+
+1. Create:
+   ```
+   mc-create --name creative --tier permanent --modrinth-mods bluemap,distanthorizons,simple-voice-chat --svc
+   ```
+2. Edit `servers/creative/env` — add superflat settings:
+   ```
+   LEVEL_TYPE=minecraft:flat
+   GENERATE_STRUCTURES=false
+   GENERATOR_SETTINGS={"layers":[{"block":"minecraft:bedrock","height":1},{"block":"minecraft:sandstone","height":99}],"biome":"minecraft:desert"}
+   ```
+3. Review generated files — specifically check:
+   - Backup sidecar (`creative-backups`) exists in `docker-compose.yml`
+   - SVC UDP port 24454 is mapped
+   - BlueMap port assigned
+4. Reload nginx: `sudo nginx -t && sudo systemctl reload nginx`
+5. Start: `mc-start creative`
+6. Check logs: `mc-logs creative` — verify mods loaded, backup sidecar healthy
+7. Run per-server verification checklist
+8. Connect in Minecraft — verify it's a superflat sandstone world with deep ground, creative mode
+9. Check `map-creative.mc.danny.is` in browser
+10. Verify backup sidecar is running: `docker compose ps creative-backups`
+11. **Test tier enforcement:** try `mc-destroy creative` — should refuse (permanent)
+12. **Test env file edit:** change a setting in `servers/creative/env` (e.g. `DIFFICULTY=peaceful`), restart (`mc-stop creative && mc-start creative`), verify the change via logs or in-game
+
+#### Phase E: BMDev Server (Ephemeral, Dev Workflow)
+
+Purpose: test the dev mod workflow — building a mod on the server and loading it into a server.
+
+1. On the server, clone the mod:
+   ```
+   cd ~/dev
+   git clone https://github.com/dannysmith/mc-bluemap-structures
+   ```
+2. Build:
+   ```
+   cd ~/dev/mc-bluemap-structures
+   ./gradlew build
+   ```
+3. Create the server:
+   ```
+   mc-create --name bmdev --modrinth-mods bluemap
+   ```
+4. Copy the built JAR into the server's mods directory:
+   ```
+   cp ~/dev/mc-bluemap-structures/build/libs/*.jar /opt/minecraft/servers/bmdev/data/mods/
+   ```
+5. Reload nginx: `sudo nginx -t && sudo systemctl reload nginx`
+6. Start: `mc-start bmdev`
+7. Check logs: `mc-logs bmdev` — check whether the mod loaded (it may fail, that's fine — we're testing the workflow, not the mod)
+8. Run per-server verification checklist
+9. Connect in Minecraft, verify bluemap works
+10. Check `map-bmdev.mc.danny.is` in browser
+
+#### Phase F: Final Checks
+
+1. `mc-status` — all three servers (n19, creative, bmdev) showing as running
+2. All three BlueMap URLs working in browser
+3. Verify `manifest.yml` looks clean with exactly three servers
+4. Verify `docker-compose.yml` has all expected services (acme-dns, mc-router, 3 MC servers, creative-backups)
+5. Quick check that `mc-stop` and `mc-start` work for individual servers (pick one, stop/start cycle)
