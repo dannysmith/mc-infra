@@ -97,6 +97,7 @@ services:
       MEMORY: 2G
       USE_AIKAR_FLAGS: "true"
       REMOVE_OLD_MODS: "TRUE"
+      MODRINTH_ALLOWED_VERSION_TYPE: beta
       MODRINTH_PROJECTS: |
         fabric-api
         lithium
