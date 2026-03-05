@@ -12,4 +12,24 @@ mod_groups:
   - c2me-fabric
   - scalablelux
   - noisiumforked
-servers: {}
+servers:
+  n19:
+    type: FABRIC
+    version: LATEST
+    mode: creative
+    tier: semi-permanent
+    mod_groups:
+    - fabric-base
+    modrinth_mods:
+    - bluemap
+    - distanthorizons
+    jar_mods: []
+    modrinth_version_type: beta
+    svc: false
+    seed: '493527618652710797'
+    motd: N19 Server
+    memory: 3G
+    pregen:
+      radius: 1500
+    bluemap_port: 8100
+    created: '2026-03-05'

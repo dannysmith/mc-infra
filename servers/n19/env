@@ -1,0 +1,18 @@
+# Minecraft settings for n19
+# Edit these, then restart: mc-stop n19 && mc-start n19
+# Reference: https://docker-minecraft-server.readthedocs.io/en/latest/configuration/server-properties/
+#
+# NOTE: Settings managed by manifest.yml (mode, memory, type, version, seed,
+# motd, mods) cannot be overridden here. Edit manifest.yml and run mc-generate.
+
+DIFFICULTY=normal
+ENABLE_COMMAND_BLOCK=true
+# MAX_PLAYERS=20
+# VIEW_DISTANCE=10
+# SIMULATION_DISTANCE=10
+# SPAWN_PROTECTION=0
+# LEVEL_TYPE=minecraft:normal
+# GENERATOR_SETTINGS=
+# FORCE_GAMEMODE=true
+# ALLOW_FLIGHT=true
+# PVP=true

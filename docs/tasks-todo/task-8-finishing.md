@@ -160,3 +160,9 @@ Purpose: test the dev mod workflow — building a mod on the server and loading 
 3. Verify `manifest.yml` looks clean with exactly three servers
 4. Verify `docker-compose.yml` has all expected services (acme-dns, mc-router, 3 MC servers, creative-backups)
 5. Quick check that `mc-stop` and `mc-start` work for individual servers (pick one, stop/start cycle)
+
+---
+
+### Bugs Found During Testing
+
+1. **BlueMap EULA auto-accept is broken.** The background poller spawned by `mc-create` starts its 5-minute window at creation time, but the server is usually started later with `mc-start`, so the poller expires before BlueMap ever writes `core.conf`. The pre-created file also gets overwritten by BlueMap on first start. Fix options: (a) find a more reliable way to auto-accept, or (b) remove the automatic code entirely and add a simple manual script like `mc-accept-bluemap <server>` that patches `core.conf` and reloads BlueMap.
