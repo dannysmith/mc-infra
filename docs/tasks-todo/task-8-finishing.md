@@ -95,30 +95,19 @@ Purpose: test seed, pregen, semi-permanent tier, mod groups + extra modrinth mod
 
 Purpose: test permanent tier, backup sidecar, SVC port mapping, env file customisation for superflat world.
 
-1. Create:
-   ```
-   mc-create --name creative --tier permanent --modrinth-mods bluemap,distanthorizons,simple-voice-chat --svc
-   ```
-2. Edit `servers/creative/env` — add superflat settings:
-   ```
-   LEVEL_TYPE=minecraft:flat
-   GENERATE_STRUCTURES=false
-   GENERATOR_SETTINGS={"layers":[{"block":"minecraft:bedrock","height":1},{"block":"minecraft:sandstone","height":99}],"biome":"minecraft:desert"}
-   ```
-3. Review generated files — specifically check:
-   - Backup sidecar (`creative-backups`) exists in `docker-compose.yml`
-   - SVC UDP port 24454 is mapped
-   - BlueMap port assigned
-4. Reload nginx: `sudo nginx -t && sudo systemctl reload nginx`
-5. Start: `mc-start creative`
-6. Check logs: `mc-logs creative` — verify mods loaded, backup sidecar healthy
-7. Run per-server verification checklist
-8. Connect in Minecraft — verify it's a superflat sandstone world with deep ground, creative mode
-9. Check `map-creative.mc.danny.is` in browser
-10. Verify backup sidecar is running: `docker compose ps creative-backups`
-11. **Test tier enforcement:** try `mc-destroy creative` — should refuse (permanent)
-12. **Test env file edit:** change a setting in `servers/creative/env` (e.g. `DIFFICULTY=peaceful`), restart (`mc-stop creative && mc-start creative`), verify the change via logs or in-game
-13. **Test world persistence + manual manifest edit** (moved from Phase C): Place a few recognisable blocks in the world. Then edit `manifest.yml` to add or remove a mod from creative's `modrinth_mods`, run `mc-generate`, restart (`mc-stop creative && mc-start creative`), check logs to verify the mod change took effect, reconnect and confirm your placed blocks are still there. Do a couple more stop/start cycles to be sure. Then revert the manifest edit, re-generate, and restart.
+1. Create — **DONE**
+2. Edit `servers/creative/env` with superflat settings — **DONE**
+3. Review generated files — **DONE** (backup sidecar, SVC UDP 24454, BlueMap port 8101 all correct)
+4. Reload nginx — **DONE**
+5. Start: `mc-start creative` — **DONE** (also pre-created BlueMap EULA manually)
+6. Check logs — **DONE**, all mods loaded, BlueMap + SVC started
+7. Run per-server verification checklist — **DONE**
+8. Connect in Minecraft — **DONE**, superflat sandstone world, creative mode
+9. Check `map-creative.mc.danny.is` — **DONE**, working
+10. Verify backup sidecar — **DONE** (needed manual `docker compose up -d creative-backups` — see bug #1)
+11. Test tier enforcement — skipped (not worth risking active world)
+12. Test env file edit — skipped
+13. Test world persistence + manual manifest edit — **DONE** (added chunky to manifest, regenerated, restarted — mod appeared in logs, placed blocks survived. Reverted and restarted.)
 
 #### Phase E: BMDev Server (Ephemeral, Dev Workflow)
 
@@ -161,4 +150,6 @@ Purpose: test the dev mod workflow — building a mod on the server and loading 
 
 ### Bugs Found During Testing
 
-1. **BlueMap EULA auto-accept is broken.** The background poller spawned by `mc-create` starts its 5-minute window at creation time, but the server is usually started later with `mc-start`, so the poller expires before BlueMap ever writes `core.conf`. The pre-created file also gets overwritten by BlueMap on first start. Fix options: (a) find a more reliable way to auto-accept, or (b) remove the automatic code entirely and add a simple manual script like `mc-accept-bluemap <server>` that patches `core.conf` and reloads BlueMap.
+1. **`mc-start <name>` doesn't start the backup sidecar.** When a permanent-tier server has a backup sidecar (e.g. `creative-backups`), `mc-start creative` only starts `creative` and `mc-router`. The sidecar needs to be included. `mc-stop` likely has the same issue.
+
+2. **BlueMap EULA auto-accept is broken.** The background poller spawned by `mc-create` starts its 5-minute window at creation time, but the server is usually started later with `mc-start`, so the poller expires before BlueMap ever writes `core.conf`. The pre-created file also gets overwritten by BlueMap on first start. Fix options: (a) find a more reliable way to auto-accept, or (b) remove the automatic code entirely and add a simple manual script like `mc-accept-bluemap <server>` that patches `core.conf` and reloads BlueMap.

@@ -20,6 +20,7 @@ services:
     environment:
       MAPPING: |
         n19.mc.danny.is=n19:25565
+        creative.mc.danny.is=creative:25565
     networks:
     - minecraft-net
     restart: unless-stopped
@@ -73,6 +74,67 @@ services:
         limits:
           memory: 4g
           cpus: "1.5"
+    restart: unless-stopped
+  creative:
+    image: itzg/minecraft-server
+    container_name: creative
+    env_file:
+    - servers/creative/env
+    environment:
+      EULA: "TRUE"
+      TYPE: FABRIC
+      VERSION: LATEST
+      MEMORY: 4G
+      USE_AIKAR_FLAGS: "true"
+      REMOVE_OLD_MODS: "TRUE"
+      MODRINTH_ALLOWED_VERSION_TYPE: beta
+      MODRINTH_PROJECTS: |
+        fabric-api
+        lithium
+        ferrite-core
+        c2me-fabric
+        scalablelux
+        noisiumforked
+        bluemap
+        distanthorizons
+        simple-voice-chat
+      WHITELIST_ENABLED: "true"
+      ENFORCE_WHITELIST: "true"
+      OPS: d2683803
+      WHITELIST: d2683803,Kam93
+      MOTD: "Creative Server"
+      MODE: creative
+      RCON_PASSWORD: ${RCON_PASSWORD:-changeme}
+    ports:
+    - "24454:24454/udp"
+    - "127.0.0.1:8101:8100"
+    volumes:
+    - ./servers/creative/data:/data
+    networks:
+    - minecraft-net
+    deploy:
+      resources:
+        limits:
+          memory: 5g
+          cpus: "2.0"
+    restart: unless-stopped
+  creative-backups:
+    image: itzg/mc-backup
+    container_name: creative-backups
+    depends_on:
+      creative:
+        condition: service_healthy
+    environment:
+      RCON_HOST: creative
+      RCON_PASSWORD: ${RCON_PASSWORD:-changeme}
+      BACKUP_INTERVAL: "24h"
+      INITIAL_DELAY: "2m"
+      PRUNE_BACKUPS_COUNT: "3"
+    volumes:
+    - ./servers/creative/data:/data:ro
+    - ./backups/creative:/backups
+    networks:
+    - minecraft-net
     restart: unless-stopped
 networks:
   minecraft-net:

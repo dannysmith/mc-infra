@@ -33,3 +33,25 @@ servers:
       radius: 1500
     bluemap_port: 8100
     created: '2026-03-05'
+  creative:
+    type: FABRIC
+    version: LATEST
+    mode: creative
+    tier: permanent
+    mod_groups:
+    - fabric-base
+    modrinth_mods:
+    - bluemap
+    - distanthorizons
+    - simple-voice-chat
+    jar_mods: []
+    modrinth_version_type: beta
+    svc: true
+    seed: null
+    motd: Creative Server
+    memory: 4G
+    backup:
+      interval: 24h
+      keep: 3
+    bluemap_port: 8101
+    created: '2026-03-05'
