@@ -537,6 +537,65 @@ def setup_server_dir(project_root, name, template_path):
             f.write(content)
 
 
+NETHER_ROOF_MAP_CONF = """\
+##                          ##
+##         BlueMap          ##
+##        Map-Config        ##
+##                          ##
+
+world: "world"
+dimension: "minecraft:the_nether"
+name: "Nether Roof"
+sorting: 101
+start-pos: { x: 0, z: 0 }
+sky-color: "#7dabff"
+void-color: "#000000"
+sky-light: 1
+ambient-light: 0.6
+remove-caves-below-y: -10000
+cave-detection-ocean-floor: 10000
+cave-detection-uses-block-light: false
+min-inhabited-time: 0
+render-mask: [
+  {
+    min-y: 107
+  }
+]
+render-edges: true
+edge-light-strength: 15
+enable-perspective-view: true
+enable-flat-view: true
+enable-free-flight-view: true
+enable-hires: true
+storage: "file"
+ignore-missing-light-data: false
+marker-sets: {
+
+}
+"""
+
+
+def setup_bluemap_nether_roof(project_root, name):
+    """Create a Nether Roof map config for BlueMap if it doesn't exist.
+
+    This adds a 4th map that renders the nether from y=107 upward,
+    showing builds on top of the bedrock ceiling.
+    The maps/ directory must already exist (created by BlueMap on first start).
+    Returns True if the file was created, False if skipped.
+    """
+    maps_dir = os.path.join(
+        project_root, 'servers', name, 'data', 'config', 'bluemap', 'maps'
+    )
+    if not os.path.isdir(maps_dir):
+        return False
+    roof_conf = os.path.join(maps_dir, 'world_nether_roof.conf')
+    if os.path.exists(roof_conf):
+        return False
+    with open(roof_conf, 'w') as f:
+        f.write(NETHER_ROOF_MAP_CONF)
+    return True
+
+
 def setup_bluemap_eula(project_root, name):
     """Pre-create BlueMap config dir with accept-download: true.
 

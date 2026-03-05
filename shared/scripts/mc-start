@@ -18,18 +18,29 @@ else
   # BlueMap EULA poller: wait for BlueMap to write core.conf, then fix it.
   # The pre-created config (from mc-create) gets overwritten by BlueMap on
   # first start. This poller detects that and patches it back.
+  # Also creates the Nether Roof map if BlueMap has generated its maps dir.
   if [ -d "servers/$1/data/config/bluemap" ]; then
     (
       CONF="servers/$1/data/config/bluemap/core.conf"
+      NEED_RELOAD=false
       for i in $(seq 1 60); do
         sleep 5
         if [ -f "$CONF" ] && grep -q "accept-download: false" "$CONF" 2>/dev/null; then
           sed -i 's/accept-download: false/accept-download: true/' "$CONF"
-          docker exec "$1" rcon-cli bluemap reload 2>/dev/null || \
-            docker compose restart "$1" 2>/dev/null
-          exit 0
+          NEED_RELOAD=true
+          break
         fi
       done
+      # Create Nether Roof map config if maps dir exists
+      ROOF="servers/$1/data/config/bluemap/maps/world_nether_roof.conf"
+      if [ -d "servers/$1/data/config/bluemap/maps" ] && [ ! -f "$ROOF" ]; then
+        PYTHONPATH=/opt/minecraft/shared/scripts python3 -c "import mclib; mclib.setup_bluemap_nether_roof('/opt/minecraft', '$1')"
+        NEED_RELOAD=true
+      fi
+      if [ "$NEED_RELOAD" = true ]; then
+        docker exec "$1" rcon-cli bluemap reload 2>/dev/null || \
+          docker compose restart "$1" 2>/dev/null
+      fi
     ) &
   fi
 fi

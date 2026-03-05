@@ -1,0 +1,36 @@
+#!/usr/bin/env python3
+"""Create a Nether Roof BlueMap map for one or all servers."""
+import sys
+import mclib
+
+PROJECT_ROOT = '/opt/minecraft'
+
+
+def main():
+    manifest = mclib.load_manifest(f'{PROJECT_ROOT}/manifest.yml')
+    servers = manifest.get('servers', {})
+
+    if len(sys.argv) > 1:
+        names = [sys.argv[1]]
+        if names[0] not in servers:
+            print(f"Error: unknown server '{names[0]}'", file=sys.stderr)
+            sys.exit(1)
+    else:
+        names = list(servers.keys())
+
+    for name in names:
+        created = mclib.setup_bluemap_nether_roof(PROJECT_ROOT, name)
+        if created:
+            print(f"{name}: created world_nether_roof.conf")
+        else:
+            maps_dir = f"{PROJECT_ROOT}/servers/{name}/data/config/bluemap/maps"
+            roof = f"{maps_dir}/world_nether_roof.conf"
+            import os
+            if not os.path.isdir(maps_dir):
+                print(f"{name}: skipped (no BlueMap maps directory)")
+            elif os.path.exists(roof):
+                print(f"{name}: skipped (already exists)")
+
+
+if __name__ == '__main__':
+    main()

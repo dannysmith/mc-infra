@@ -67,7 +67,8 @@ Work through tasks in priority order (lowest number first). When completing a ta
 | `mc-start` / `mc-stop` | Bash     | Start/stop servers                                             |
 | `mc-logs <server>`     | Bash     | Tail logs for a server                                         |
 | `mc-console <server>`  | Bash     | Attach to server console (RCON)                                |
-| `mc-cleanup`           | Bash     | Prune unused Docker images and build cache (runs weekly via cron) |
+| `mc-nether-roof`       | Python   | Create BlueMap Nether Roof map for one or all servers              |
+| `mc-cleanup`           | Bash     | Prune unused Docker images and build cache (runs weekly via cron)  |
 
 ## Players
 
