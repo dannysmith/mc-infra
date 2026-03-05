@@ -55,3 +55,20 @@ servers:
       keep: 3
     bluemap_port: 8101
     created: '2026-03-05'
+  bmdev:
+    type: FABRIC
+    version: LATEST
+    mode: creative
+    tier: ephemeral
+    mod_groups:
+    - fabric-base
+    modrinth_mods:
+    - bluemap
+    jar_mods: []
+    modrinth_version_type: beta
+    svc: false
+    seed: null
+    motd: Bmdev Server
+    memory: 2G
+    bluemap_port: 8102
+    created: '2026-03-05'

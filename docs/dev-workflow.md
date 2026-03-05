@@ -26,7 +26,13 @@ mc-stop test && mc-start test
 mc-logs test
 ```
 
-Manually-placed JARs in `data/mods/` are safe across restarts — the itzg image's auto-removal only cleans up files it placed (Modrinth downloads, `MODS` env var). Your JARs won't be touched.
+**Important:** `REMOVE_OLD_MODS=TRUE` (set on all servers) deletes **all** `.jar` files from `data/mods/` on startup, then re-downloads Modrinth-managed mods. Manually-placed JARs will be wiped unless excluded. Add this to the server's `env` file:
+
+```
+REMOVE_OLD_MODS_EXCLUDE=my-mod-*.jar
+```
+
+Multiple patterns can be comma-separated. Without this, you'll need to re-copy your JAR after every restart.
 
 ### 3. Graduate to production
 

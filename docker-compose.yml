@@ -21,6 +21,7 @@ services:
       MAPPING: |
         n19.mc.danny.is=n19:25565
         creative.mc.danny.is=creative:25565
+        bmdev.mc.danny.is=bmdev:25565
     networks:
     - minecraft-net
     restart: unless-stopped
@@ -135,6 +136,46 @@ services:
     - ./backups/creative:/backups
     networks:
     - minecraft-net
+    restart: unless-stopped
+  bmdev:
+    image: itzg/minecraft-server
+    container_name: bmdev
+    env_file:
+    - servers/bmdev/env
+    environment:
+      EULA: "TRUE"
+      TYPE: FABRIC
+      VERSION: LATEST
+      MEMORY: 2G
+      USE_AIKAR_FLAGS: "true"
+      REMOVE_OLD_MODS: "TRUE"
+      MODRINTH_ALLOWED_VERSION_TYPE: beta
+      MODRINTH_PROJECTS: |
+        fabric-api
+        lithium
+        ferrite-core
+        c2me-fabric
+        scalablelux
+        noisiumforked
+        bluemap
+      WHITELIST_ENABLED: "true"
+      ENFORCE_WHITELIST: "true"
+      OPS: d2683803
+      WHITELIST: d2683803,Kam93
+      MOTD: "Bmdev Server"
+      MODE: creative
+      RCON_PASSWORD: ${RCON_PASSWORD:-changeme}
+    ports:
+    - "127.0.0.1:8102:8100"
+    volumes:
+    - ./servers/bmdev/data:/data
+    networks:
+    - minecraft-net
+    deploy:
+      resources:
+        limits:
+          memory: 3g
+          cpus: "1.0"
     restart: unless-stopped
 networks:
   minecraft-net:

@@ -30,7 +30,7 @@ Output JAR is in `build/libs/` (use the one without `-sources` or `-dev` suffix)
     # Check it loaded
     mc-logs <server>
 
-Manually-placed JARs in `data/mods/` survive server restarts — the itzg image only auto-removes its own Modrinth downloads.
+**Important:** `REMOVE_OLD_MODS=TRUE` (set on all servers) deletes all `.jar` files from `data/mods/` on startup, then re-downloads Modrinth-managed mods. Manually-placed JARs will be wiped unless you add `REMOVE_OLD_MODS_EXCLUDE=my-mod-*.jar` to the server's `env` file. Multiple patterns can be comma-separated.
 
 ## Graduating a Mod to Production
 
