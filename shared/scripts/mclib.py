@@ -633,18 +633,3 @@ def copy_world_from(project_root, source_name, dest_name):
     shutil.copytree(src_data, dest_data)
 
 
-BLUEMAP_EULA_POLL_SCRIPT = '''\
-#!/usr/bin/env bash
-# Background poller: wait for BlueMap to write core.conf, then fix it.
-CONF="servers/{name}/data/config/bluemap/core.conf"
-for i in $(seq 1 60); do
-  sleep 5
-  if [ -f "$CONF" ] && grep -q "accept-download: false" "$CONF" 2>/dev/null; then
-    sed -i 's/accept-download: false/accept-download: true/' "$CONF"
-    # Try RCON reload, fall back to container restart
-    docker exec {name} rcon-cli bluemap reload 2>/dev/null || \
-      docker compose restart {name} 2>/dev/null
-    exit 0
-  fi
-done
-'''

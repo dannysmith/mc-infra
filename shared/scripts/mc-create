@@ -130,7 +130,9 @@ def main():
             print(f"Error: {e}", file=sys.stderr)
             sys.exit(1)
 
-    # BlueMap EULA auto-acceptance
+    # BlueMap EULA: pre-create config dir with accept-download: true.
+    # BlueMap overwrites this on first start, but mc-start has a background
+    # poller that detects and patches it back.
     server = manifest['servers'][args.name]
     has_bluemap = server.get('bluemap', False)
     if has_bluemap is not False:
@@ -138,13 +140,7 @@ def main():
         resolved = mclib.resolve_mods(server, mod_groups)
         if has_bluemap is True or 'bluemap' in resolved:
             mclib.setup_bluemap_eula(root, args.name)
-            # Also launch background poller in case BlueMap overwrites our pre-created config
-            poll_script = mclib.BLUEMAP_EULA_POLL_SCRIPT.format(name=args.name)
-            subprocess.Popen(
-                ['bash', '-c', poll_script],
-                cwd=root, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-            )
-            print("  BlueMap EULA pre-accepted (background poller running)")
+            print("  BlueMap EULA pre-accepted")
 
     # Summary
     print(f"\nServer '{args.name}' created:")

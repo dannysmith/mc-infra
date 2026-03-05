@@ -11,5 +11,10 @@ if [ $# -eq 0 ]; then
     docker compose stop $servers
   fi
 else
-  docker compose stop "$1"
+  # Stop server + backup sidecar (if it exists)
+  services="$1"
+  if docker compose config --services 2>/dev/null | grep -q "^${1}-backups$"; then
+    services="${1}-backups $1"
+  fi
+  docker compose stop $services
 fi

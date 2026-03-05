@@ -8,5 +8,28 @@ if [ $# -eq 0 ]; then
   # Start all MC servers
   op run --env-file=.env.tpl -- docker compose up -d
 else
-  op run --env-file=.env.tpl -- docker compose up -d "$1" mc-router
+  # Build service list: server + mc-router + backup sidecar (if it exists)
+  services="$1 mc-router"
+  if docker compose config --services 2>/dev/null | grep -q "^${1}-backups$"; then
+    services="$1 ${1}-backups mc-router"
+  fi
+  op run --env-file=.env.tpl -- docker compose up -d $services
+
+  # BlueMap EULA poller: wait for BlueMap to write core.conf, then fix it.
+  # The pre-created config (from mc-create) gets overwritten by BlueMap on
+  # first start. This poller detects that and patches it back.
+  if [ -d "servers/$1/data/config/bluemap" ]; then
+    (
+      CONF="servers/$1/data/config/bluemap/core.conf"
+      for i in $(seq 1 60); do
+        sleep 5
+        if [ -f "$CONF" ] && grep -q "accept-download: false" "$CONF" 2>/dev/null; then
+          sed -i 's/accept-download: false/accept-download: true/' "$CONF"
+          docker exec "$1" rcon-cli bluemap reload 2>/dev/null || \
+            docker compose restart "$1" 2>/dev/null
+          exit 0
+        fi
+      done
+    ) &
+  fi
 fi
