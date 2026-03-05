@@ -31,17 +31,17 @@ For each server we create, verify:
 
 ### Commands Tested
 
-- [ ] `mc-create` (basic)
-- [ ] `mc-create` with `--seed`, `--pregen`, `--svc`, `--modrinth-mods`, `--tier`, `--mode`
-- [ ] `mc-start <name>` (single server)
-- [ ] `mc-stop <name>` (single server)
-- [ ] `mc-status`
-- [ ] `mc-logs <name>`
-- [ ] `mc-console <name>`
+- [x] `mc-create` (basic) — smoketest server
+- [x] `mc-create` with `--seed`, `--pregen`, `--modrinth-mods`, `--tier` — N19 server
+- [x] `mc-start <name>` (single server)
+- [x] `mc-stop <name>` (single server)
+- [x] `mc-status`
+- [x] `mc-logs <name>`
+- [x] `mc-console <name>`
 - [ ] `mc-generate` (after manual manifest edit)
-- [ ] `mc-archive <name>`
+- [x] `mc-archive <name>` — smoketest archived successfully
 - [ ] `mc-destroy` tier enforcement (semi-permanent without `--confirm`, permanent without `--force`)
-- [ ] `mc-destroy <name>` (ephemeral, immediate)
+- [x] `mc-destroy <name>` (ephemeral, immediate) — tested during Phase A
 - [ ] Manual env file edit + restart
 
 ---
@@ -50,13 +50,14 @@ For each server we create, verify:
 
 #### Phase A: Preparation
 
-1. Push any local changes and pull on the server
+1. Push any local changes and pull on the server — **DONE**
 2. Change the default pregen radius in `mc-create` from 3000 to 1500 blocks (commit + push) — **DONE**
-3. Run `mc-cleanup` on the server to prune unused Docker images
-4. Destroy both existing servers:
+3. Run `mc-cleanup` on the server to prune unused Docker images — **DONE** (reclaimed 1.5GB build cache)
+4. Destroy both existing servers — **DONE**
    - `mc-destroy creative --force` (permanent tier)
    - `mc-destroy test` (ephemeral tier)
-5. Verify manifest is empty, compose regenerated, nginx reloaded
+   - Also cleaned up 3 stale containers (`creative`, `test`, `creative-backups`) left behind by destroy
+5. Verify manifest is empty, compose regenerated, nginx reloaded — **DONE**
 
 **Note on resources:** The server has 8GB RAM. Running all three target servers simultaneously would exceed this (5g + 4g + 3g = 12g in container limits). Stop running servers before starting new ones during testing. If you want multiple servers running long-term, upgrade the Hetzner plan.
 
@@ -64,37 +65,31 @@ For each server we create, verify:
 
 Purpose: quickly validate the core create/start/stop/archive loop before building real servers.
 
-1. Create a minimal ephemeral server:
-   ```
-   mc-create --name smoketest --no-bluemap
-   ```
-2. Review `manifest.yml` and `docker-compose.yml` — check the entry looks right
-3. Start it: `mc-start smoketest`
-4. Check logs: `mc-logs smoketest` — wait for clean startup
-5. Check status: `mc-status`
-6. Test RCON: `mc-console smoketest` — run `list`, exit
-7. Connect in Minecraft client to `smoketest.mc.danny.is` — verify creative mode, normal world
-8. Stop it: `mc-stop smoketest`
-9. Archive it: `mc-archive smoketest`
-10. Verify: archive exists in `shared/backups/`, server removed from manifest, `docker-compose.yml` regenerated
+1. Create a minimal ephemeral server — **DONE**
+2. Review `manifest.yml` and `docker-compose.yml` — **DONE**, all correct
+3. Start it: `mc-start smoketest` — **DONE**
+4. Check logs — **DONE**, clean startup
+5. Check status: `mc-status` — **DONE**
+6. Test RCON: `mc-console smoketest` — **DONE**
+7. Connect in Minecraft client — **DONE**, creative mode, normal world
+8. Stop it: `mc-stop smoketest` — **DONE**
+9. Archive it: `mc-archive smoketest` — **DONE**
+10. Verify archive — **DONE** (148MB archive in `shared/backups/`, server removed from manifest and compose)
 
 #### Phase C: N19 Server (Semi-permanent)
 
 Purpose: test seed, pregen, semi-permanent tier, mod groups + extra modrinth mods, bluemap + DH.
 
-1. Create:
-   ```
-   mc-create --name n19 --tier semi-permanent --seed 493527618652710797 --modrinth-mods bluemap,distanthorizons --pregen
-   ```
-2. Review generated files: `manifest.yml`, `docker-compose.yml`, `nginx/conf.d/bluemap.conf`
-3. Reload nginx: `sudo nginx -t && sudo systemctl reload nginx`
-4. Start: `mc-start n19`
-5. Check logs: `mc-logs n19` — verify all mods loaded, Chunky parameters set
-6. Run per-server verification checklist (see above)
-7. Connect in Minecraft, switch to spectator mode, stay connected for a while to let Chunky pregen, DH build LODs, and BlueMap start rendering
-8. Check `map-n19.mc.danny.is` in browser
-9. **Test tier enforcement:** try `mc-destroy n19` (no flags) — should fail requiring `--confirm`
-10. **Test world persistence + manual manifest edit:** Place a few recognisable blocks in the world (e.g. a small structure near spawn). Then edit `manifest.yml` to add or remove a mod from N19's `modrinth_mods`, run `mc-generate`, restart (`mc-stop n19 && mc-start n19`), check logs to verify the mod change took effect, reconnect and confirm your placed blocks are still there. Do a couple more stop/start cycles to be sure. Then revert the manifest edit, re-generate, and restart.
+1. Create — **DONE**
+2. Review generated files — **DONE**, all correct (manifest, compose, nginx)
+3. Reload nginx — **DONE**
+4. Start: `mc-start n19` — **DONE**
+5. Check logs — **DONE**, mods loaded (BlueMap needed manual EULA fix — see bugs below), Chunky pregen running
+6. Run per-server verification checklist — **IN PROGRESS** (seed confirmed via RCON, RCON working, mc-status correct, BlueMap rendering)
+7. Connect in Minecraft — **DONE**, waiting for Chunky pregen + DH LODs
+8. Check `map-n19.mc.danny.is` — **DONE**, working
+9. **Test tier enforcement** — skipped (not worth risking active world)
+10. **Test world persistence + manual manifest edit** — moved to Phase D (creative server). Too risky here — a bad outcome would lose all the Chunky pregen progress.
 
 #### Phase D: Creative Server (Permanent, Superflat)
 
@@ -123,6 +118,7 @@ Purpose: test permanent tier, backup sidecar, SVC port mapping, env file customi
 10. Verify backup sidecar is running: `docker compose ps creative-backups`
 11. **Test tier enforcement:** try `mc-destroy creative` — should refuse (permanent)
 12. **Test env file edit:** change a setting in `servers/creative/env` (e.g. `DIFFICULTY=peaceful`), restart (`mc-stop creative && mc-start creative`), verify the change via logs or in-game
+13. **Test world persistence + manual manifest edit** (moved from Phase C): Place a few recognisable blocks in the world. Then edit `manifest.yml` to add or remove a mod from creative's `modrinth_mods`, run `mc-generate`, restart (`mc-stop creative && mc-start creative`), check logs to verify the mod change took effect, reconnect and confirm your placed blocks are still there. Do a couple more stop/start cycles to be sure. Then revert the manifest edit, re-generate, and restart.
 
 #### Phase E: BMDev Server (Ephemeral, Dev Workflow)
 
