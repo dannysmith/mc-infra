@@ -1,6 +1,9 @@
 # mc-infra
 
-Self-hosted Minecraft server infrastructure on Hetzner Cloud. Runs alongside the existing WiseHosting "N19 Server" — this VPS handles creative worlds, experimentation, mod development, and throwaway servers.
+> [!WARNING]
+> This is a personal project for managing my own Minecraft servers. It's public for transparency and reference, but it's not designed for others to use. There's no support, no guarantees, and things may change or break without notice.
+
+Self-hosted Minecraft server infrastructure on Hetzner Cloud — this VPS handles creative worlds, experimentation, mod development, and throwaway servers.
 
 ## Quick Start
 
@@ -45,7 +48,7 @@ docs/                    # Architecture docs, task tracking, reference
 ## Key Commands
 
 ```bash
-mc-create --name <name> --type FABRIC --version 1.21.4 --mod-group fabric-base --tier ephemeral
+mc-create --name <name> --type FABRIC --version 1.21.11 --tier ephemeral
 mc-destroy <name>
 mc-archive <name>
 mc-status
