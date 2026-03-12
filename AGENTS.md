@@ -1,46 +1,27 @@
 # MC Infrastructure
 
-Self-hosted Minecraft server infrastructure on Hetzner Cloud (Debian 13, Docker Compose).
+See [README.md](README.md) for a full overview of the project, architecture, manifest system, and features.
 
-## What This Is
-
-A single VPS running multiple Minecraft servers via Docker. Used for creative worlds, experimentation, mod/plugin development, and throwaway servers. Max 1-2 concurrent players.
-
-The existing "N19 Server" on WiseHosting is separate and not managed here.
-
-## Architecture
-
-- **Host**: Hetzner Cloud CAX21 (ARM, Debian 13 Trixie)
-- **MC servers**: `itzg/minecraft-server` containers (Fabric, vanilla, etc.)
-- **Routing**: `itzg/mc-router` routes by subdomain on port 25565
-- **Web**: Nginx reverse proxy for BlueMap UIs, SSL via Let's Encrypt wildcard for `*.mc.danny.is`
-- **SSL**: Self-hosted acme-dns for DNS-01 cert renewal (no DNS provider credentials on VPS)
-- **Backups**: `itzg/docker-mc-backup` sidecars + offsite via rclone
-- **Secrets**: 1Password CLI (`op run` with `.env.tpl`)
+This file covers additional context for AI agents working on this codebase.
 
 ## Key Files
 
 - `manifest.yml` — **Source of truth** for all server definitions and mod groups
 - `docker-compose.yml` — **Generated** by `mc-generate` from manifest (do not edit directly)
 - `nginx/conf.d/bluemap.conf` — **Generated** by `mc-generate` (do not edit directly)
-- `setup.sh` — Host provisioning script (idempotent, run on fresh Debian box)
-- `setup-ssl.sh` — SSL cert setup via acme-dns (interactive on first run)
 - `.env.tpl` — 1Password secret references (resolved at runtime by `op run`)
 - `servers/<name>/env` — Per-server Minecraft settings (user-editable, not generated)
 - `servers/<name>/data/` — Bind-mounted container filesystem (world data, mods, configs, logs, etc. — live access to running server internals)
-- `acme-dns/` — Dockerfile (builds from source for ARM) and config for self-hosted acme-dns
 - `shared/scripts/mclib.py` — Shared Python library for all management scripts
 - `shared/scripts/` — Management scripts (`mc-create`, `mc-generate`, etc.)
-- `shared/mods/` — Shared JAR files for non-Modrinth mods
 - `shared/templates/` — Templates for new server creation (including `dev-claude.md` for `~/dev/CLAUDE.md`)
-- `nginx/conf.d/` — Nginx reverse proxy and SSL configs
-- `docs/` — Reference docs (see `docs/manifest-and-scripts.md` for the manifest system, `docs/dns-and-routing.md` for routing/SSL)
-- `~/dev/` — Mod development workspace on the server (separate from mc-infra, created by `setup.sh`)
 
 ## Reference Docs
 
 - `docs/reference/itzg-docker-minecraft-server.md` — **Generated** full documentation for the `itzg/minecraft-server` Docker image. Regenerate with `scripts/fetch-itzg-docs`. Gitignored — run the script locally or on the server to create it. Use this as a comprehensive reference for all available environment variables, server types, mod/plugin configuration, and features.
 - `docs/dev-workflow.md` — Fabric mod development workflow (dev → test → production lifecycle)
+- `docs/manifest-and-scripts.md` — Full manifest reference and all `mc-*` command usage
+- `docs/dns-and-routing.md` — DNS, routing, and SSL architecture
 
 ## Task Management
 
@@ -53,20 +34,20 @@ Work through tasks in priority order (lowest number first). When completing a ta
 
 ## Scripts
 
-**Management scripts** (`shared/scripts/`) — the `mc-*` commands used on the server. On PATH via `~/.bash_aliases`. Python scripts use `mclib.py` for shared logic. See `docs/manifest-and-scripts.md` for full usage details.
+**Management scripts** (`shared/scripts/`) — on PATH via `~/.bash_aliases`. Python scripts use `mclib.py` for shared logic.
 
-**Development scripts** (`scripts/`) — tooling for working on this repo (e.g. `fetch-itzg-docs` to regenerate reference docs). Not deployed to the server PATH.
+**Development scripts** (`scripts/`) — tooling for working on this repo (e.g. `fetch-itzg-docs`). Not deployed to the server PATH.
 
-| Script                 | Language | Purpose                                                        |
-| ---------------------- | -------- | -------------------------------------------------------------- |
-| `mc-generate`          | Python   | Regenerate compose + nginx from manifest                       |
-| `mc-create`            | Python   | Create a new server (adds to manifest, generates, sets up dir) |
-| `mc-destroy`           | Python   | Remove a server (tier-enforced deletion)                       |
-| `mc-archive`           | Python   | Archive world data to tarball, then destroy                    |
-| `mc-status`            | Python   | Show status of all servers                                     |
-| `mc-start` / `mc-stop` | Bash     | Start/stop servers                                             |
-| `mc-logs <server>`     | Bash     | Tail logs for a server                                         |
-| `mc-console <server>`  | Bash     | Attach to server console (RCON)                                |
+| Script                 | Language | Purpose                                                            |
+| ---------------------- | -------- | ------------------------------------------------------------------ |
+| `mc-generate`          | Python   | Regenerate compose + nginx from manifest                           |
+| `mc-create`            | Python   | Create a new server (adds to manifest, generates, sets up dir)     |
+| `mc-destroy`           | Python   | Remove a server (tier-enforced deletion)                           |
+| `mc-archive`           | Python   | Archive world data to tarball, then destroy                        |
+| `mc-status`            | Python   | Show status of all servers                                         |
+| `mc-start` / `mc-stop` | Bash     | Start/stop servers                                                 |
+| `mc-logs <server>`     | Bash     | Tail logs for a server                                             |
+| `mc-console <server>`  | Bash     | Attach to server console (RCON)                                    |
 | `mc-nether-roof`       | Python   | Create BlueMap Nether Roof map for one or all servers              |
 | `mc-cleanup`           | Bash     | Prune unused Docker images and build cache (runs weekly via cron)  |
 
