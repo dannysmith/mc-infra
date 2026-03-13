@@ -18,7 +18,7 @@ const Layout: FC<PropsWithChildren<{ title?: string }>> = ({
     </head>
     <body class="bg-bg text-text min-h-screen" hx-boost="true">
       <header class="border-b border-border px-6 py-4">
-        <nav class="flex items-center gap-6">
+        <nav class="mx-auto flex max-w-6xl items-center gap-6">
           <a
             href="/"
             class="text-text-heading text-lg font-bold no-underline hover:text-link"
@@ -27,7 +27,7 @@ const Layout: FC<PropsWithChildren<{ title?: string }>> = ({
           </a>
         </nav>
       </header>
-      <main class="px-6 py-6">{children}</main>
+      <main class="mx-auto max-w-6xl px-6 py-6">{children}</main>
     </body>
   </html>
 );

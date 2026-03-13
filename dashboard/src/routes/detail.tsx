@@ -36,7 +36,7 @@ const DetailPage: FC<{
         href="/"
         class="text-sm text-text-muted no-underline hover:text-link"
       >
-        &larr; All servers
+        &larr; Overview
       </a>
     </div>
 
@@ -206,18 +206,20 @@ const DetailPage: FC<{
         </h2>
         <div class="grid gap-4 sm:grid-cols-2">
           {players.map((p) => (
-            <div class="rounded border border-border bg-bg p-4">
-              <div class="mb-3 flex items-center gap-2">
+            <div class="rounded-lg border border-border bg-bg p-5">
+              <div class="mb-4 flex items-center gap-3">
                 <img
-                  src={`https://mc-heads.net/avatar/${p.uuid}/24`}
+                  src={`https://mc-heads.net/avatar/${p.uuid}/48`}
                   alt=""
-                  class="h-6 w-6 rounded"
+                  class="h-10 w-10 rounded"
                   loading="lazy"
                 />
-                <span class="font-semibold">{p.name}</span>
-                <span class="text-xs text-text-muted">
-                  {gameModeName(p.gameMode)}
-                </span>
+                <div>
+                  <div class="font-semibold text-text-heading">{p.name}</div>
+                  <div class="text-xs text-text-muted">
+                    {gameModeName(p.gameMode)}
+                  </div>
+                </div>
               </div>
               <dl class="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
                 <Field label="Position">
@@ -228,13 +230,16 @@ const DetailPage: FC<{
                 <Field label="Dimension">{p.dimension}</Field>
                 <Field label="Health">
                   <span class="tabular-nums">{p.health / 2}</span>
-                  <span class="text-red"> ❤</span>
+                  <span class="text-red"> &#10084;</span>
                 </Field>
                 <Field label="XP Level">
                   <span class="tabular-nums">{p.xpLevel}</span>
                 </Field>
-                {p.stats && (
-                  <>
+              </dl>
+              {p.stats && (
+                <>
+                  <div class="my-3 border-t border-border" />
+                  <dl class="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
                     <Field label="Play Time">
                       {formatPlayTime(p.stats.playTimeTicks)}
                     </Field>
@@ -253,14 +258,14 @@ const DetailPage: FC<{
                     <Field label="Flown">
                       {formatDistance(p.stats.distanceFlownCm)}
                     </Field>
-                  </>
-                )}
-                {p.advancementCount > 0 && (
-                  <Field label="Advancements">
-                    <span class="tabular-nums">{p.advancementCount}</span>
-                  </Field>
-                )}
-              </dl>
+                    {p.advancementCount > 0 && (
+                      <Field label="Advancements">
+                        <span class="tabular-nums">{p.advancementCount}</span>
+                      </Field>
+                    )}
+                  </dl>
+                </>
+              )}
             </div>
           ))}
         </div>
@@ -288,7 +293,7 @@ const DetailPage: FC<{
         </div>
         <pre
           id="rcon-output"
-          class="min-h-[2rem] rounded bg-bg p-3 text-sm text-text-muted"
+          class="min-h-[2rem] rounded border border-border bg-bg p-3 font-mono text-sm text-text-muted"
         >
           Click a command above to run it.
         </pre>
@@ -304,7 +309,7 @@ const DetailPage: FC<{
         <div
           id="log-viewer"
           data-server={s.name}
-          class="h-96 overflow-y-auto rounded bg-bg p-3 font-mono text-xs leading-5 text-text-muted"
+          class="h-96 overflow-y-auto rounded border border-border bg-bg p-3 font-mono text-xs leading-5 text-text-muted"
         >
           <div id="log-content"></div>
         </div>
@@ -369,7 +374,7 @@ const DiskBar: FC<{
   categories: { label: string; bytes: number }[];
   total: number;
 }> = ({ categories, total }) => (
-  <div class="flex h-4 w-full overflow-hidden rounded-full bg-border">
+  <div class="flex h-5 w-full overflow-hidden rounded-full bg-border">
     {categories.map((cat) => {
       const pct = (cat.bytes / total) * 100;
       if (pct < 0.5) return null;
