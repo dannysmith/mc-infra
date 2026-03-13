@@ -1,0 +1,14 @@
+[Unit]
+Description=MC Dashboard (Hono/Bun)
+After=network.target
+
+[Service]
+Type=simple
+User=danny
+WorkingDirectory=/opt/minecraft/dashboard
+ExecStart=/home/danny/.bun/bin/bun run src/index.ts
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
