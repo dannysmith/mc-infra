@@ -7,6 +7,8 @@ import {
   getAllContainers,
 } from "./docker.ts";
 import { getHostMetrics } from "./host.ts";
+import { executeRcon, getAllowedCommands } from "./rcon.ts";
+import { getServerDiskUsage } from "./filesystem.ts";
 import Layout from "./components/Layout.tsx";
 import OverviewPage from "./routes/overview.tsx";
 import DetailPage from "./routes/detail.tsx";
@@ -65,12 +67,38 @@ app.get("/servers/:name", async (c) => {
     );
   }
   const status = await getContainerStatus(name);
+  const disk = getServerDiskUsage(name);
   const serverWithStatus: ServerWithStatus = { ...server, container: status };
   return c.html(
     <Layout title={name}>
-      <DetailPage server={serverWithStatus} />
+      <DetailPage
+        server={serverWithStatus}
+        disk={disk}
+        rconCommands={getAllowedCommands()}
+      />
     </Layout>
   );
+});
+
+// RCON command execution
+app.post("/api/servers/:name/rcon", async (c) => {
+  const name = c.req.param("name");
+  const servers = getServers();
+  if (!servers.find((s) => s.name === name)) {
+    return c.html(
+      <span class="text-red">Server not found.</span>,
+      404
+    );
+  }
+
+  const body = await c.req.parseBody();
+  const command = typeof body.command === "string" ? body.command : "";
+  const result = await executeRcon(name, command);
+
+  if (!result.ok) {
+    return c.html(<span class="text-red">{result.output}</span>);
+  }
+  return c.html(<span>{result.output || "(no output)"}</span>);
 });
 
 // HTMX partial: host health
