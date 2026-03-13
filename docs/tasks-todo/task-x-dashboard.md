@@ -64,8 +64,8 @@ Lightweight web dashboard for server status, probably at `dashboard.mc.danny.is`
 
 ### Stack
 
-- **Backend**: Hono on Bun (TypeScript). Lightweight API server + static file serving + WebSocket for log streaming.
-- **Frontend**: Vite + React + shadcn/ui. Builds to static files served by Hono. shadcn/ui provides pre-built dashboard components (tables, cards, badges, etc.) for minimal styling effort.
+- **Backend**: Hono on Bun (TypeScript). Server-rendered HTML via Hono's JSX + WebSocket for log streaming.
+- **Frontend**: HTMX + Tailwind CSS. No client-side framework — Hono renders HTML server-side using JSX as a templating engine. HTMX handles partial page updates, polling, and WebSocket log streaming. Tailwind handles styling. Minimal custom JS only where needed (log viewer scroll behavior).
 - **Deployment**: Host process managed by systemd (not a Docker container). Same pattern as Nginx — a system service that monitors/supports the Docker stack.
 - **Reverse proxy**: Nginx at `dashboard.mc.danny.is` with basic auth + SSL (wildcard cert already covers it). Proxies to Hono on a localhost port.
 
@@ -105,7 +105,9 @@ Lightweight web dashboard for server status, probably at `dashboard.mc.danny.is`
 
 | Library | Purpose | Notes |
 |---------|---------|-------|
-| `dockerode` + `@types/dockerode` | Docker Engine API | 4,800 stars, 12.8M/month. Container states, stats, logs, exec. Alternative: raw `fetch({ unix })` for simple queries (Bun supports this natively). |
+| `htmx.org` | Client-side interactivity | ~14KB gzipped. Partial page updates, polling (`hx-trigger="every 5s"`), WebSocket extension for log streaming. |
+| `tailwindcss` | Utility-first CSS | Build-time CSS generation from class names in JSX templates. No hand-written CSS needed. |
+| N/A (Bun native `fetch({ unix })`) | Docker Engine API | Container states, stats, logs, exec. Bun's native unix socket support replaces dockerode entirely. |
 | `rcon-client` | Minecraft RCON protocol (deferred) | TS-native, 19k/month. Not needed for v1 — using Docker exec to run `rcon-cli` inside containers instead (simpler, no port mapping needed). Can switch to direct RCON later if exec overhead becomes noticeable. |
 | `prismarine-nbt` | Parse NBT .dat files | 27k/month, PrismarineJS ecosystem. `readFile` + `parse()` + `simplify()` = JSON. Handles gzip automatically. Gives us level.dat, player data, etc. |
 | `prismarine-provider-anvil` | Read .mca region files | For counting generated chunks. `getAllChunksInRegion()`. |
@@ -151,22 +153,57 @@ Prove manifest reading and basic API structure:
 1. ✅ **`GET /api/servers`** — reads `manifest.yml`, returns server definitions as JSON (name, tier, version, mode, memory, mods, bluemap URL, created date).
 2. ✅ **Basic HTML/JS page** (no React yet) — fetches `/api/servers` and renders a table. Proves the full round trip.
 
-### Phase 2: Docker container status
+### Phase 2: Docker container status ✅
 
 Prove Docker API access:
 
-1. **Extend `/api/servers`** — for each server, query Docker API via unix socket for container state (running/stopped/not created), CPU%, memory usage, uptime.
-2. **Update the page** — show status badges, resource usage alongside manifest data.
+1. ✅ **Extend `/api/servers`** — for each server, query Docker API via unix socket for container state (running/stopped/not created), CPU%, memory usage, uptime.
+2. ✅ **Update the page** — show status badges, resource usage alongside manifest data.
 
-Decision point: dockerode vs Bun's native `fetch({ unix })`. Try native fetch first — if it covers list + stats + inspect cleanly, skip the dependency.
+Decision: Bun's native `fetch({ unix })` covers list + inspect + stats cleanly. No dockerode needed.
 
 ### Phase 3: Frontend scaffold
 
-Replace the bare HTML with a real frontend:
+Replace the inline HTML string with a proper server-rendered frontend using Hono JSX + HTMX + Tailwind:
 
-1. **Vite + React + shadcn/ui** — builds to `dashboard/dist/`, served by Hono as static files.
-2. **Overview page** — server list with cards/table (name, status, tier badge, players, CPU%, RAM, uptime).
-3. **Server detail page** — manifest config + runtime data from phases 1-2.
+#### Why not React + shadcn/ui
+
+- Overkill for a 2-page read-only dashboard with one WebSocket stream.
+- Adds a client-side framework, build step, and hydration complexity for what is essentially server-known state.
+- HTMX gives us partial page updates, polling, and WebSocket support with zero client JS framework.
+- Hono's built-in JSX gives us typed components, shared layouts, and partials — the same DX benefits we'd get from React, but server-rendered with no client bundle.
+
+#### Why HTMX
+
+- RCON buttons (phase 5) are textbook HTMX: `hx-post` + `hx-target` + `hx-swap`.
+- Metric polling via `hx-trigger="every 5s"` — simpler than WebSockets for stats that change infrequently.
+- WebSocket extension handles log streaming connection + DOM appending (phase 6). Only ~20 lines of custom JS needed for auto-scroll behavior.
+- `hx-boost` on links gives SPA-like navigation between overview and detail pages without client routing.
+- Checking `HX-Request` header lets the same route return a full page (direct nav) or just a fragment (HTMX request).
+
+#### Sub-steps
+
+1. **Install Tailwind CSS** — add `tailwindcss` as a dev dependency. Configure `tailwind.config.ts` to scan `src/**/*.tsx` for class names. Add a build script (`bun run build:css`) that compiles `src/styles/input.css` → `src/styles/output.css`. Add the build command to the restart workflow.
+
+2. **Configure Hono JSX** — set `jsxImportSource: "hono/jsx"` in `tsconfig.json`. Verify JSX components render server-side via `c.html()`.
+
+3. **Create shared layout** — `src/components/Layout.tsx` with `<html>`, `<head>` (Tailwind CSS link, HTMX script tag), `<body>` wrapper, and nav/header. Use Hono's `jsxRenderer()` middleware so all routes use `c.render(<Content />)` to inject into the layout.
+
+4. **Create reusable components** — extract from the current inline HTML:
+   - `StatusBadge.tsx` — running/exited/not_created with color coding
+   - `TierBadge.tsx` — permanent/semi-permanent/ephemeral badges
+   - `ServerTable.tsx` — the server list table (overview page)
+   - `MetricCell.tsx` — formatted CPU%, RAM values
+
+5. **Add HTMX** — include `htmx.org` via CDN script tag in the layout (no npm package needed for v1). Add the WebSocket extension script tag for later use.
+
+6. **Convert overview page** — replace the inline HTML string in `GET /` with JSX components. The route returns full-page HTML using `c.render()`. Add `hx-get="/partials/servers" hx-trigger="every 10s" hx-swap="innerHTML"` on the server table body for auto-refreshing stats.
+
+7. **Add partials route** — `GET /partials/servers` returns just the `<tbody>` content (server rows as HTML fragment). This is what HTMX polls for refresh. Reuses the same `ServerTable` row components.
+
+8. **Add server detail page** — `GET /servers/:name` returns the detail page with manifest config + runtime data. Uses the shared layout via `c.render()`. For now, shows the same data as the API but in a readable layout (config section, runtime section). Link from overview table rows via `hx-boost` or plain `<a>` tags.
+
+9. **Restyle with Tailwind** — replace all inline `<style>` CSS with Tailwind utility classes across all components. Dark theme via Tailwind's dark mode utilities or a simple color palette in `tailwind.config.ts`.
 
 ### Phase 4: Host metrics
 
@@ -195,8 +232,8 @@ Replace the bare HTML with a real frontend:
 
 - **Port**: 3100 (avoids conflict with BlueMap's 8100+ range).
 - **Nginx config**: manually created in `nginx/conf.d/dashboard.conf` — not generated by `mc-generate` since the dashboard isn't a manifest-driven service.
-- **Restart workflow**: edit code → `systemctl restart mc-dashboard` → refresh browser. No hot reload needed for a personal tool.
-- **Build step**: once React is added (phase 3), `cd dashboard && bun run build` before restart. Could add this to the systemd ExecStartPre or a small deploy script.
+- **Restart workflow**: edit code → `bun run build:css` (if Tailwind classes changed) → `systemctl restart mc-dashboard` → refresh browser. No hot reload needed for a personal tool.
+- **Build step**: only Tailwind CSS compilation (`bun run build:css`). No JS bundling — Hono JSX renders server-side. Could add CSS build to systemd ExecStartPre or a small deploy script.
 
 ### Phase 8: Documentation & setup
 
