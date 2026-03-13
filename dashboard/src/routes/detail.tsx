@@ -23,6 +23,20 @@ const Field: FC<{ label: string; children: any }> = ({ label, children }) => (
   </div>
 );
 
+const BigStat: FC<{ label: string; value: string; sub?: string }> = ({
+  label,
+  value,
+  sub,
+}) => (
+  <div>
+    <div class="text-2xl font-bold tabular-nums text-text-heading">{value}</div>
+    <div class="text-xs text-text-muted">
+      {label}
+      {sub && <span class="ml-1 text-text-muted/60">{sub}</span>}
+    </div>
+  </div>
+);
+
 const DetailPage: FC<{
   server: ServerWithStatus;
   disk: ServerDiskUsage;
@@ -31,20 +45,35 @@ const DetailPage: FC<{
   players: PlayerData[];
 }> = ({ server: s, disk, rconCommands, worldInfo, players }) => (
   <div>
-    <div class="mb-6">
+    {/* Breadcrumb */}
+    <div class="mb-4">
       <a
         href="/"
         class="text-sm text-text-muted no-underline hover:text-link"
       >
-        &larr; All servers
+        &larr; Overview
       </a>
     </div>
 
-    <div class="mb-6 flex items-center gap-4">
-      <h1 class="text-xl font-bold text-text-heading">{s.name}</h1>
-      <TierBadge tier={s.tier} />
-      <StatusBadge container={s.container} />
-    </div>
+    {/* Hero card — server name + status + runtime stats */}
+    <section class="mb-8 rounded-lg border border-border bg-bg-card p-6">
+      <div class="flex items-center gap-4">
+        <h1 class="text-2xl font-bold text-text-heading">{s.name}</h1>
+        <TierBadge tier={s.tier} />
+        <StatusBadge container={s.container} />
+      </div>
+
+      {s.container && s.container.state !== "not_created" && (
+        <div
+          id="runtime"
+          hx-get={`/partials/servers/${s.name}/runtime`}
+          hx-trigger="every 10s"
+          hx-swap="innerHTML"
+        >
+          <RuntimeSection container={s.container} />
+        </div>
+      )}
+    </section>
 
     {/* Config from manifest */}
     <section class="mb-6 rounded-lg border border-border bg-bg-card p-5">
@@ -89,26 +118,13 @@ const DetailPage: FC<{
       </div>
     </section>
 
-    {/* Runtime data */}
-    {s.container && s.container.state !== "not_created" && (
-      <section
-        class="mb-6 rounded-lg border border-border bg-bg-card p-5"
-        id="runtime"
-        hx-get={`/partials/servers/${s.name}/runtime`}
-        hx-trigger="every 10s"
-        hx-swap="innerHTML"
-      >
-        <RuntimeSection container={s.container} />
-      </section>
-    )}
-
     {/* Disk usage */}
     {disk.total > 0 && (
       <section class="mb-6 rounded-lg border border-border bg-bg-card p-5">
         <h2 class="mb-4 text-sm font-semibold uppercase tracking-wider text-text-muted">
           Disk Usage
         </h2>
-        <div class="mb-3 text-lg font-semibold tabular-nums">
+        <div class="mb-3 text-2xl font-bold tabular-nums text-text-heading">
           {formatBytes(disk.total)}
         </div>
         <DiskBar categories={disk.categories} total={disk.total} />
@@ -206,20 +222,27 @@ const DetailPage: FC<{
         </h2>
         <div class="grid gap-4 sm:grid-cols-2">
           {players.map((p) => (
-            <div class="rounded border border-border bg-bg p-4">
-              <div class="mb-3 flex items-center gap-2">
+            <div class="rounded-lg border border-border bg-bg p-5">
+              {/* Player header */}
+              <div class="mb-4 flex items-center gap-3">
                 <img
-                  src={`https://mc-heads.net/avatar/${p.uuid}/24`}
+                  src={`https://mc-heads.net/avatar/${p.uuid}/48`}
                   alt=""
-                  class="h-6 w-6 rounded"
+                  class="h-12 w-12 rounded"
                   loading="lazy"
                 />
-                <span class="font-semibold">{p.name}</span>
-                <span class="text-xs text-text-muted">
-                  {gameModeName(p.gameMode)}
-                </span>
+                <div>
+                  <div class="text-lg font-bold text-text-heading">
+                    {p.name}
+                  </div>
+                  <div class="text-xs text-text-muted">
+                    {gameModeName(p.gameMode)}
+                  </div>
+                </div>
               </div>
-              <dl class="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
+
+              {/* Location */}
+              <dl class="mb-4 grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
                 <Field label="Position">
                   <span class="tabular-nums">
                     {p.posX}, {p.posY}, {p.posZ}
@@ -228,13 +251,18 @@ const DetailPage: FC<{
                 <Field label="Dimension">{p.dimension}</Field>
                 <Field label="Health">
                   <span class="tabular-nums">{p.health / 2}</span>
-                  <span class="text-red"> ❤</span>
+                  <span class="text-red"> &#10084;</span>
                 </Field>
                 <Field label="XP Level">
                   <span class="tabular-nums">{p.xpLevel}</span>
                 </Field>
-                {p.stats && (
-                  <>
+              </dl>
+
+              {/* Stats */}
+              {p.stats && (
+                <>
+                  <div class="mb-3 border-t border-border" />
+                  <dl class="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
                     <Field label="Play Time">
                       {formatPlayTime(p.stats.playTimeTicks)}
                     </Field>
@@ -253,14 +281,14 @@ const DetailPage: FC<{
                     <Field label="Flown">
                       {formatDistance(p.stats.distanceFlownCm)}
                     </Field>
-                  </>
-                )}
-                {p.advancementCount > 0 && (
-                  <Field label="Advancements">
-                    <span class="tabular-nums">{p.advancementCount}</span>
-                  </Field>
-                )}
-              </dl>
+                    {p.advancementCount > 0 && (
+                      <Field label="Advancements">
+                        <span class="tabular-nums">{p.advancementCount}</span>
+                      </Field>
+                    )}
+                  </dl>
+                </>
+              )}
             </div>
           ))}
         </div>
@@ -288,7 +316,7 @@ const DetailPage: FC<{
         </div>
         <pre
           id="rcon-output"
-          class="min-h-[2rem] rounded bg-bg p-3 text-sm text-text-muted"
+          class="min-h-[2.5rem] rounded border border-border bg-bg p-4 font-mono text-sm text-text-muted"
         >
           Click a command above to run it.
         </pre>
@@ -304,7 +332,7 @@ const DetailPage: FC<{
         <div
           id="log-viewer"
           data-server={s.name}
-          class="h-96 overflow-y-auto rounded bg-bg p-3 font-mono text-xs leading-5 text-text-muted"
+          class="h-96 overflow-y-auto rounded border border-border bg-bg p-3 font-mono text-xs leading-5 text-text-muted"
         >
           <div id="log-content"></div>
         </div>
@@ -369,7 +397,7 @@ const DiskBar: FC<{
   categories: { label: string; bytes: number }[];
   total: number;
 }> = ({ categories, total }) => (
-  <div class="flex h-4 w-full overflow-hidden rounded-full bg-border">
+  <div class="flex h-5 w-full overflow-hidden rounded-full bg-border">
     {categories.map((cat) => {
       const pct = (cat.bytes / total) * 100;
       if (pct < 0.5) return null;
@@ -385,33 +413,50 @@ const DiskBar: FC<{
 
 const RuntimeSection: FC<{
   container: NonNullable<ServerWithStatus["container"]>;
-}> = ({ container: c }) => (
-  <>
-    <h2 class="mb-4 text-sm font-semibold uppercase tracking-wider text-text-muted">
-      Runtime
-    </h2>
-    <dl class="grid grid-cols-2 gap-x-8 gap-y-4 sm:grid-cols-3 lg:grid-cols-4">
-      <Field label="State">
+}> = ({ container: c }) => {
+  const isRunning = c.state === "running";
+  if (!isRunning) {
+    return (
+      <div class="mt-4 border-t border-border pt-4">
         <StatusBadge container={c} />
-      </Field>
+      </div>
+    );
+  }
+
+  return (
+    <div class="mt-4 grid grid-cols-4 gap-6 border-t border-border pt-4">
       {c.cpuPercent != null && (
-        <Field label="CPU">
-          <span class="tabular-nums">{c.cpuPercent}%</span>
-        </Field>
+        <BigStat label="CPU" value={`${c.cpuPercent}%`} />
       )}
       {c.memoryUsageMB != null && (
-        <Field label="RAM">
-          <span class="tabular-nums">
-            {c.memoryUsageMB} / {c.memoryLimitMB} MB
-          </span>
-        </Field>
+        <BigStat
+          label="RAM"
+          value={`${c.memoryUsageMB} MB`}
+          sub={`/ ${c.memoryLimitMB} MB`}
+        />
       )}
       {c.startedAt && (
-        <Field label="Started">{new Date(c.startedAt).toUTCString()}</Field>
+        <BigStat
+          label="Uptime"
+          value={formatUptime(c.startedAt)}
+        />
       )}
-    </dl>
-  </>
-);
+      <BigStat label="Status" value={c.health ?? c.state} />
+    </div>
+  );
+};
+
+function formatUptime(startedAt: string): string {
+  const ms = Date.now() - new Date(startedAt).getTime();
+  const s = Math.floor(ms / 1000);
+  if (s < 60) return `${s}s`;
+  const m = Math.floor(s / 60);
+  if (m < 60) return `${m}m`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h ${m % 60}m`;
+  const d = Math.floor(h / 24);
+  return `${d}d ${h % 24}h`;
+}
 
 export { RuntimeSection };
 export default DetailPage;
