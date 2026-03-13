@@ -177,22 +177,22 @@ Replaced inline HTML with server-rendered Hono JSX + HTMX + Tailwind CSS.
 
 Decision: React + shadcn/ui was overkill. HTMX + Hono JSX gives partial page updates, polling, and SPA-like navigation with zero client framework. Tailwind handles styling. Only custom JS needed in future is ~20 lines for log viewer scroll behavior.
 
-### Phase 4: Host metrics
+### Phase 4: Host metrics ✅
 
-1. **`GET /api/host`** — CPU load, RAM usage, disk usage from `/proc/loadavg`, `/proc/meminfo`, `statvfs`.
-2. **Service health** — list all Docker containers (not just MC servers) with status.
-3. **Add to overview page** — host health section above server list.
+1. ✅ **`GET /api/host`** — CPU load, RAM usage, disk usage from `/proc/loadavg`, `/proc/meminfo`, `statvfs`.
+2. ✅ **Service health** — list all Docker containers (not just MC servers) with status.
+3. ✅ **Add to overview page** — host health section above server list.
 
-### Phase 5: RCON + filesystem data
+### Phase 5: RCON + filesystem data ✅
 
-1. **`POST /api/servers/:name/rcon`** — execute RCON command via Docker exec API. Returns command output.
-2. **RCON buttons on detail page** — Check TPS, player list, BlueMap status, DH status.
-3. **Filesystem data** — disk usage per server (`servers/<name>/data/`), per dimension, installed mod JARs.
+1. ✅ **`POST /api/servers/:name/rcon`** — execute RCON command via Docker exec API. Returns command output.
+2. ✅ **RCON buttons on detail page** — Check TPS, player list, BlueMap status, DH status.
+3. ✅ **Filesystem data** — disk usage per server (`servers/<name>/data/`), per dimension, installed mod JARs.
 
-### Phase 6: Log streaming
+### Phase 6: Log streaming ✅
 
-1. **WebSocket endpoint** — `/ws/servers/:name/logs`. Streams Docker container logs to browser.
-2. **Log viewer component** — auto-scroll, pause on scroll-up, resume on scroll-to-bottom.
+1. ✅ **WebSocket endpoint** — `/ws/servers/:name/logs`. Streams Docker container logs to browser via Hono's `createBunWebSocket()`. Demuxes Docker's 8-byte multiplexed stream frames.
+2. ✅ **Log viewer component** — auto-scroll, pause on scroll-up, resume on scroll-to-bottom. Reconnects on disconnect, caps at 1000 lines, cleans up on HTMX page navigation.
 
 ### Phase 7: MC world data
 
