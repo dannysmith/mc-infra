@@ -1,11 +1,17 @@
 {
   "name": "dashboard",
-  "module": "index.ts",
+  "module": "src/index.tsx",
   "type": "module",
   "private": true,
+  "scripts": {
+    "build:css": "bunx @tailwindcss/cli -i src/styles/input.css -o src/styles/output.css --minify",
+    "dev:css": "bunx @tailwindcss/cli -i src/styles/input.css -o src/styles/output.css --watch"
+  },
   "devDependencies": {
+    "@tailwindcss/cli": "^4.2.1",
     "@types/bun": "latest",
-    "@types/js-yaml": "^4.0.9"
+    "@types/js-yaml": "^4.0.9",
+    "tailwindcss": "^4.2.1"
   },
   "peerDependencies": {
     "typescript": "^5"

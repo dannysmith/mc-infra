@@ -117,3 +117,10 @@ export async function getContainerStatuses(
 
   return result;
 }
+
+export async function getContainerStatus(
+  name: string
+): Promise<ContainerStatus | null> {
+  const result = await getContainerStatuses([name]);
+  return result[name] ?? null;
+}

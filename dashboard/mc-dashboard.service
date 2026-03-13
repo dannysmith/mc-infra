@@ -6,7 +6,7 @@ After=network.target
 Type=simple
 User=danny
 WorkingDirectory=/opt/minecraft/dashboard
-ExecStart=/home/danny/.bun/bin/bun run src/index.ts
+ExecStart=/home/danny/.bun/bin/bun run src/index.tsx
 Restart=on-failure
 RestartSec=5
 

@@ -162,48 +162,20 @@ Prove Docker API access:
 
 Decision: Bun's native `fetch({ unix })` covers list + inspect + stats cleanly. No dockerode needed.
 
-### Phase 3: Frontend scaffold
+### Phase 3: Frontend scaffold ✅
 
-Replace the inline HTML string with a proper server-rendered frontend using Hono JSX + HTMX + Tailwind:
+Replaced inline HTML with server-rendered Hono JSX + HTMX + Tailwind CSS.
 
-#### Why not React + shadcn/ui
+- ✅ Tailwind CSS v4 with custom dark theme (`src/styles/input.css`), built via `bun run build:css`.
+- ✅ Hono JSX (`jsxImportSource: "hono/jsx"`) for server-side templating.
+- ✅ Shared layout (`Layout.tsx`) with HTMX via CDN, Tailwind CSS, nav header, `hx-boost` on body.
+- ✅ Reusable components: `StatusBadge`, `TierBadge`, `ServerRows`.
+- ✅ Overview page with server table, auto-refreshing every 10s via `hx-get="/partials/servers"`.
+- ✅ Server detail page (`/servers/:name`) with config, mods, and runtime sections (runtime auto-refreshes).
+- ✅ Partial routes for HTMX polling (`/partials/servers`, `/partials/servers/:name/runtime`).
+- ✅ `dashboard/CLAUDE.md` with project structure, routing, styling, and HTMX patterns.
 
-- Overkill for a 2-page read-only dashboard with one WebSocket stream.
-- Adds a client-side framework, build step, and hydration complexity for what is essentially server-known state.
-- HTMX gives us partial page updates, polling, and WebSocket support with zero client JS framework.
-- Hono's built-in JSX gives us typed components, shared layouts, and partials — the same DX benefits we'd get from React, but server-rendered with no client bundle.
-
-#### Why HTMX
-
-- RCON buttons (phase 5) are textbook HTMX: `hx-post` + `hx-target` + `hx-swap`.
-- Metric polling via `hx-trigger="every 5s"` — simpler than WebSockets for stats that change infrequently.
-- WebSocket extension handles log streaming connection + DOM appending (phase 6). Only ~20 lines of custom JS needed for auto-scroll behavior.
-- `hx-boost` on links gives SPA-like navigation between overview and detail pages without client routing.
-- Checking `HX-Request` header lets the same route return a full page (direct nav) or just a fragment (HTMX request).
-
-#### Sub-steps
-
-1. **Install Tailwind CSS** — add `tailwindcss` as a dev dependency. Configure `tailwind.config.ts` to scan `src/**/*.tsx` for class names. Add a build script (`bun run build:css`) that compiles `src/styles/input.css` → `src/styles/output.css`. Add the build command to the restart workflow.
-
-2. **Configure Hono JSX** — set `jsxImportSource: "hono/jsx"` in `tsconfig.json`. Verify JSX components render server-side via `c.html()`.
-
-3. **Create shared layout** — `src/components/Layout.tsx` with `<html>`, `<head>` (Tailwind CSS link, HTMX script tag), `<body>` wrapper, and nav/header. Use Hono's `jsxRenderer()` middleware so all routes use `c.render(<Content />)` to inject into the layout.
-
-4. **Create reusable components** — extract from the current inline HTML:
-   - `StatusBadge.tsx` — running/exited/not_created with color coding
-   - `TierBadge.tsx` — permanent/semi-permanent/ephemeral badges
-   - `ServerTable.tsx` — the server list table (overview page)
-   - `MetricCell.tsx` — formatted CPU%, RAM values
-
-5. **Add HTMX** — include `htmx.org` via CDN script tag in the layout (no npm package needed for v1). Add the WebSocket extension script tag for later use.
-
-6. **Convert overview page** — replace the inline HTML string in `GET /` with JSX components. The route returns full-page HTML using `c.render()`. Add `hx-get="/partials/servers" hx-trigger="every 10s" hx-swap="innerHTML"` on the server table body for auto-refreshing stats.
-
-7. **Add partials route** — `GET /partials/servers` returns just the `<tbody>` content (server rows as HTML fragment). This is what HTMX polls for refresh. Reuses the same `ServerTable` row components.
-
-8. **Add server detail page** — `GET /servers/:name` returns the detail page with manifest config + runtime data. Uses the shared layout via `c.render()`. For now, shows the same data as the API but in a readable layout (config section, runtime section). Link from overview table rows via `hx-boost` or plain `<a>` tags.
-
-9. **Restyle with Tailwind** — replace all inline `<style>` CSS with Tailwind utility classes across all components. Dark theme via Tailwind's dark mode utilities or a simple color palette in `tailwind.config.ts`.
+Decision: React + shadcn/ui was overkill. HTMX + Hono JSX gives partial page updates, polling, and SPA-like navigation with zero client framework. Tailwind handles styling. Only custom JS needed in future is ~20 lines for log viewer scroll behavior.
 
 ### Phase 4: Host metrics
 

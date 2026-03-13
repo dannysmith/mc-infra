@@ -1,0 +1,22 @@
+@import "tailwindcss";
+
+@source "../**/*.tsx";
+
+@theme {
+  --color-bg: #0f1117;
+  --color-bg-card: #161b22;
+  --color-bg-hover: #1c2128;
+  --color-border: #21262d;
+  --color-border-light: #30363d;
+  --color-text: #e1e4e8;
+  --color-text-muted: #8b949e;
+  --color-text-heading: #ffffff;
+  --color-link: #58a6ff;
+  --color-green: #3fb950;
+  --color-orange: #f0883e;
+  --color-red: #f85149;
+  --color-blue: #58a6ff;
+  --color-blue-bg: #1f6feb33;
+  --color-orange-bg: #f0883e33;
+  --color-gray-bg: #8b949e33;
+}
