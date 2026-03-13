@@ -194,11 +194,22 @@ Decision: React + shadcn/ui was overkill. HTMX + Hono JSX gives partial page upd
 1. ✅ **WebSocket endpoint** — `/ws/servers/:name/logs`. Streams Docker container logs to browser via Hono's `createBunWebSocket()`. Demuxes Docker's 8-byte multiplexed stream frames.
 2. ✅ **Log viewer component** — auto-scroll, pause on scroll-up, resume on scroll-to-bottom. Reconnects on disconnect, caps at 1000 lines, cleans up on HTMX page navigation.
 
-### Phase 7: MC world data
+### Phase 7: MC world data ✅
 
-1. **NBT parsing** — `prismarine-nbt` for level.dat (spawn, seed, gamerules, version, day/time, weather) and playerdata (position, dimension, health, XP).
-2. **JSON reads** — player stats (play time, blocks mined, mobs killed) and advancements from `stats/*.json` and `advancements/*.json`.
-3. **Chunk counts** — `prismarine-provider-anvil` for region file analysis (generated chunk count per dimension).
+New data module (`src/world.ts`) following the same pattern as `host.ts` and `filesystem.ts`. One new dependency: `prismarine-nbt` (confirmed working with Bun — no native addons, uses Buffer + zlib which Bun supports natively).
+
+**Skipped:** chunk counts via `prismarine-provider-anvil` (slow on large worlds, marginal value) and entity counts from region files (same issue — can use RCON if ever needed).
+
+1. ✅ **`getWorldInfo(serverName)`** — reads `level.dat` via `prismarine-nbt`. Returns: seed, spawn coords, day count, time of day, weather, difficulty, gamerules, MC version. Handles NBT quirks (seed as `[high, low]` int pair, `spawn.pos` array, `game_rules` with `minecraft:` prefixed keys).
+2. ✅ **`getPlayerData(serverName)`** — for each UUID file in `playerdata/`:
+   - Parses `.dat` file via `prismarine-nbt` → position, dimension, game mode, health, XP level.
+   - Reads matching `stats/<uuid>.json` (plain JSON) → play time, distances traveled, blocks mined, mobs killed, deaths, jumps.
+   - Reads matching `advancements/<uuid>.json` (plain JSON) → filters out `recipes/` keys, counts real advancements completed.
+   - Maps UUIDs to player names via `usercache.json` in each server's data directory.
+3. ✅ **"World" and "Players" sections on detail page** — between disk usage and RCON:
+   - World card: MC version, seed, spawn coords, day/time, game mode, difficulty, weather. Collapsible gamerules list.
+   - Per-player cards: avatar (mc-heads.net), name, game mode, position + dimension, health, XP, play time, deaths, mobs killed, blocks mined, walked/flown distance, advancement count.
+4. ✅ **No polling** — snapshot on page load, same as disk usage. World info and player data fetched in parallel with container status.
 
 ### Deployment notes
 

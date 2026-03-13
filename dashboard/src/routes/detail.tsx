@@ -3,6 +3,14 @@ import { raw } from "hono/html";
 import type { ServerWithStatus } from "../components/ServerRows.tsx";
 import type { ServerDiskUsage } from "../filesystem.ts";
 import { formatBytes } from "../filesystem.ts";
+import type { WorldInfo, PlayerData } from "../world.ts";
+import {
+  gameModeName,
+  difficultyName,
+  formatPlayTime,
+  formatDistance,
+  formatDayTime,
+} from "../world.ts";
 import StatusBadge from "../components/StatusBadge.tsx";
 import TierBadge from "../components/TierBadge.tsx";
 
@@ -19,7 +27,9 @@ const DetailPage: FC<{
   server: ServerWithStatus;
   disk: ServerDiskUsage;
   rconCommands: string[];
-}> = ({ server: s, disk, rconCommands }) => (
+  worldInfo: WorldInfo | null;
+  players: PlayerData[];
+}> = ({ server: s, disk, rconCommands, worldInfo, players }) => (
   <div>
     <div class="mb-6">
       <a
@@ -113,6 +123,144 @@ const DetailPage: FC<{
               <span class="tabular-nums text-text-muted">
                 {formatBytes(cat.bytes)}
               </span>
+            </div>
+          ))}
+        </div>
+      </section>
+    )}
+
+    {/* World info */}
+    {worldInfo && (
+      <section class="mb-6 rounded-lg border border-border bg-bg-card p-5">
+        <h2 class="mb-4 text-sm font-semibold uppercase tracking-wider text-text-muted">
+          World
+        </h2>
+        <dl class="grid grid-cols-2 gap-x-8 gap-y-4 sm:grid-cols-3 lg:grid-cols-4">
+          <Field label="MC Version">{worldInfo.version}</Field>
+          <Field label="Seed">
+            <span class="font-mono text-sm">{worldInfo.seed}</span>
+          </Field>
+          <Field label="Spawn">
+            <span class="tabular-nums">
+              {worldInfo.spawnX}, {worldInfo.spawnY}, {worldInfo.spawnZ}
+            </span>
+          </Field>
+          <Field label="Day Time">
+            <span class="tabular-nums">
+              Day {Math.floor(worldInfo.dayTime / 24000)},{" "}
+              {formatDayTime(worldInfo.dayTime)}
+            </span>
+          </Field>
+          <Field label="Game Mode">
+            {gameModeName(worldInfo.gameType)}
+          </Field>
+          <Field label="Difficulty">
+            {difficultyName(worldInfo.difficulty)}
+            {worldInfo.hardcore && (
+              <span class="ml-1 text-red">(Hardcore)</span>
+            )}
+          </Field>
+          <Field label="Weather">
+            {worldInfo.thundering
+              ? "Thunder"
+              : worldInfo.raining
+                ? "Rain"
+                : "Clear"}
+          </Field>
+        </dl>
+        {Object.keys(worldInfo.gamerules).length > 0 && (
+          <details class="mt-4">
+            <summary class="cursor-pointer text-xs font-semibold uppercase tracking-wider text-text-muted hover:text-text">
+              Gamerules
+            </summary>
+            <dl class="mt-2 grid grid-cols-2 gap-x-6 gap-y-1 text-sm sm:grid-cols-3 lg:grid-cols-4">
+              {Object.entries(worldInfo.gamerules)
+                .sort(([a], [b]) => a.localeCompare(b))
+                .map(([key, val]) => (
+                  <div class="flex justify-between gap-2">
+                    <dt class="text-text-muted">{key}</dt>
+                    <dd
+                      class={
+                        val === "true"
+                          ? "text-green"
+                          : val === "false"
+                            ? "text-text-muted"
+                            : "tabular-nums"
+                      }
+                    >
+                      {val}
+                    </dd>
+                  </div>
+                ))}
+            </dl>
+          </details>
+        )}
+      </section>
+    )}
+
+    {/* Players */}
+    {players.length > 0 && (
+      <section class="mb-6 rounded-lg border border-border bg-bg-card p-5">
+        <h2 class="mb-4 text-sm font-semibold uppercase tracking-wider text-text-muted">
+          Players
+        </h2>
+        <div class="grid gap-4 sm:grid-cols-2">
+          {players.map((p) => (
+            <div class="rounded border border-border bg-bg p-4">
+              <div class="mb-3 flex items-center gap-2">
+                <img
+                  src={`https://mc-heads.net/avatar/${p.uuid}/24`}
+                  alt=""
+                  class="h-6 w-6 rounded"
+                  loading="lazy"
+                />
+                <span class="font-semibold">{p.name}</span>
+                <span class="text-xs text-text-muted">
+                  {gameModeName(p.gameMode)}
+                </span>
+              </div>
+              <dl class="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
+                <Field label="Position">
+                  <span class="tabular-nums">
+                    {p.posX}, {p.posY}, {p.posZ}
+                  </span>
+                </Field>
+                <Field label="Dimension">{p.dimension}</Field>
+                <Field label="Health">
+                  <span class="tabular-nums">{p.health / 2}</span>
+                  <span class="text-red"> ❤</span>
+                </Field>
+                <Field label="XP Level">
+                  <span class="tabular-nums">{p.xpLevel}</span>
+                </Field>
+                {p.stats && (
+                  <>
+                    <Field label="Play Time">
+                      {formatPlayTime(p.stats.playTimeTicks)}
+                    </Field>
+                    <Field label="Deaths">
+                      <span class="tabular-nums">{p.stats.deaths}</span>
+                    </Field>
+                    <Field label="Mobs Killed">
+                      <span class="tabular-nums">{p.stats.mobKills}</span>
+                    </Field>
+                    <Field label="Blocks Mined">
+                      <span class="tabular-nums">{p.stats.blocksMined}</span>
+                    </Field>
+                    <Field label="Walked">
+                      {formatDistance(p.stats.distanceWalkedCm)}
+                    </Field>
+                    <Field label="Flown">
+                      {formatDistance(p.stats.distanceFlownCm)}
+                    </Field>
+                  </>
+                )}
+                {p.advancementCount > 0 && (
+                  <Field label="Advancements">
+                    <span class="tabular-nums">{p.advancementCount}</span>
+                  </Field>
+                )}
+              </dl>
             </div>
           ))}
         </div>

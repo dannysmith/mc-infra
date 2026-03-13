@@ -11,6 +11,7 @@ import {
 import { getHostMetrics } from "./host.ts";
 import { executeRcon, getAllowedCommands } from "./rcon.ts";
 import { getServerDiskUsage } from "./filesystem.ts";
+import { getWorldInfo, getPlayerData } from "./world.ts";
 import Layout from "./components/Layout.tsx";
 import OverviewPage from "./routes/overview.tsx";
 import DetailPage from "./routes/detail.tsx";
@@ -70,7 +71,11 @@ app.get("/servers/:name", async (c) => {
       404
     );
   }
-  const status = await getContainerStatus(name);
+  const [status, worldInfo, players] = await Promise.all([
+    getContainerStatus(name),
+    getWorldInfo(name),
+    getPlayerData(name),
+  ]);
   const disk = getServerDiskUsage(name);
   const serverWithStatus: ServerWithStatus = { ...server, container: status };
   return c.html(
@@ -79,6 +84,8 @@ app.get("/servers/:name", async (c) => {
         server={serverWithStatus}
         disk={disk}
         rconCommands={getAllowedCommands()}
+        worldInfo={worldInfo}
+        players={players}
       />
     </Layout>
   );
