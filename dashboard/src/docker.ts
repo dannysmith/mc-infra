@@ -6,6 +6,7 @@ async function dockerFetch(path: string): Promise<Response> {
 
 interface ContainerInfo {
   Names: string[];
+  Image: string;
   State: string;
   Status: string;
 }
@@ -123,4 +124,24 @@ export async function getContainerStatus(
 ): Promise<ContainerStatus | null> {
   const result = await getContainerStatuses([name]);
   return result[name] ?? null;
+}
+
+export interface ServiceInfo {
+  name: string;
+  image: string;
+  state: string;
+  status: string;
+}
+
+export async function getAllContainers(): Promise<ServiceInfo[]> {
+  const res = await dockerFetch("/containers/json?all=true");
+  const containers: ContainerInfo[] = await res.json();
+  return containers
+    .map((c) => ({
+      name: c.Names[0]?.replace(/^\//, "") ?? "unknown",
+      image: c.Image.split(":")[0]!.split("/").pop()!,
+      state: c.State,
+      status: c.Status,
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name));
 }

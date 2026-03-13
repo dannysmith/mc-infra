@@ -1,11 +1,17 @@
 import { Hono } from "hono";
 import { serveStatic } from "hono/bun";
 import { getServers } from "./manifest.ts";
-import { getContainerStatuses, getContainerStatus } from "./docker.ts";
+import {
+  getContainerStatuses,
+  getContainerStatus,
+  getAllContainers,
+} from "./docker.ts";
+import { getHostMetrics } from "./host.ts";
 import Layout from "./components/Layout.tsx";
 import OverviewPage from "./routes/overview.tsx";
 import DetailPage from "./routes/detail.tsx";
 import ServerRows from "./components/ServerRows.tsx";
+import HostHealth from "./components/HostHealth.tsx";
 import { RuntimeSection } from "./routes/detail.tsx";
 import type { ServerWithStatus } from "./components/ServerRows.tsx";
 
@@ -33,10 +39,14 @@ app.get("/api/servers", async (c) => {
 
 // Overview page
 app.get("/", async (c) => {
-  const servers = await getServersWithStatus();
+  const [servers, services] = await Promise.all([
+    getServersWithStatus(),
+    getAllContainers(),
+  ]);
+  const host = getHostMetrics();
   return c.html(
     <Layout>
-      <OverviewPage servers={servers} />
+      <OverviewPage servers={servers} host={host} services={services} />
     </Layout>
   );
 });
@@ -61,6 +71,13 @@ app.get("/servers/:name", async (c) => {
       <DetailPage server={serverWithStatus} />
     </Layout>
   );
+});
+
+// HTMX partial: host health
+app.get("/partials/host", async (c) => {
+  const host = getHostMetrics();
+  const services = await getAllContainers();
+  return c.html(<HostHealth metrics={host} services={services} />);
 });
 
 // HTMX partial: server table rows
