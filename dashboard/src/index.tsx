@@ -1,10 +1,12 @@
 import { Hono } from "hono";
 import { serveStatic } from "hono/bun";
+import { createBunWebSocket } from "hono/bun";
 import { getServers } from "./manifest.ts";
 import {
   getContainerStatuses,
   getContainerStatus,
   getAllContainers,
+  streamContainerLogs,
 } from "./docker.ts";
 import { getHostMetrics } from "./host.ts";
 import { executeRcon, getAllowedCommands } from "./rcon.ts";
@@ -16,6 +18,8 @@ import ServerRows from "./components/ServerRows.tsx";
 import HostHealth from "./components/HostHealth.tsx";
 import { RuntimeSection } from "./routes/detail.tsx";
 import type { ServerWithStatus } from "./components/ServerRows.tsx";
+
+const { upgradeWebSocket, websocket } = createBunWebSocket();
 
 const app = new Hono();
 
@@ -101,6 +105,46 @@ app.post("/api/servers/:name/rcon", async (c) => {
   return c.html(<span>{result.output || "(no output)"}</span>);
 });
 
+// WebSocket: log streaming
+app.get(
+  "/ws/servers/:name/logs",
+  upgradeWebSocket((c) => {
+    const name = c.req.param("name");
+    let controller: AbortController | null = null;
+
+    return {
+      onOpen(_event, ws) {
+        const servers = getServers();
+        if (!servers.find((s) => s.name === name)) {
+          ws.send("Error: Server not found");
+          ws.close();
+          return;
+        }
+
+        controller = new AbortController();
+        streamContainerLogs(
+          name,
+          (line) => {
+            try {
+              ws.send(line);
+            } catch {}
+          },
+          controller.signal
+        )
+          .catch(() => {})
+          .finally(() => {
+            try {
+              ws.close();
+            } catch {}
+          });
+      },
+      onClose() {
+        controller?.abort();
+      },
+    };
+  })
+);
+
 // HTMX partial: host health
 app.get("/partials/host", async (c) => {
   const host = getHostMetrics();
@@ -127,4 +171,5 @@ app.get("/partials/servers/:name/runtime", async (c) => {
 export default {
   port: 3100,
   fetch: app.fetch,
+  websocket,
 };

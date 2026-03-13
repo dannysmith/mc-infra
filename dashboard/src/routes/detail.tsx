@@ -1,4 +1,5 @@
 import type { FC } from "hono/jsx";
+import { raw } from "hono/html";
 import type { ServerWithStatus } from "../components/ServerRows.tsx";
 import type { ServerDiskUsage } from "../filesystem.ts";
 import { formatBytes } from "../filesystem.ts";
@@ -143,6 +144,60 @@ const DetailPage: FC<{
         >
           Click a command above to run it.
         </pre>
+      </section>
+    )}
+
+    {/* Logs */}
+    {s.container?.state === "running" && (
+      <section class="mb-6 rounded-lg border border-border bg-bg-card p-5">
+        <h2 class="mb-4 text-sm font-semibold uppercase tracking-wider text-text-muted">
+          Logs
+        </h2>
+        <div
+          id="log-viewer"
+          data-server={s.name}
+          class="h-96 overflow-y-auto rounded bg-bg p-3 font-mono text-xs leading-5 text-text-muted"
+        >
+          <div id="log-content"></div>
+        </div>
+        <div class="mt-2 flex items-center gap-3">
+          <span id="log-status" class="text-xs text-text-muted">
+            Connecting...
+          </span>
+          <button
+            id="log-scroll-btn"
+            class="hidden rounded border border-border-light bg-bg px-2 py-1 text-xs text-text-muted hover:bg-bg-hover"
+          >
+            &darr; Scroll to bottom
+          </button>
+        </div>
+        <script>
+          {raw(`(function(){
+  var v=document.getElementById('log-viewer'),c=document.getElementById('log-content'),
+      st=document.getElementById('log-status'),sb=document.getElementById('log-scroll-btn'),
+      name=v.dataset.server,auto=true,ws=null,dead=false;
+  function connect(){
+    if(dead)return;
+    var p=location.protocol==='https:'?'wss:':'ws:';
+    ws=new WebSocket(p+'//'+location.host+'/ws/servers/'+name+'/logs');
+    ws.onopen=function(){st.textContent='Connected';};
+    ws.onmessage=function(e){
+      var d=document.createElement('div');d.textContent=e.data;c.appendChild(d);
+      while(c.children.length>1000)c.removeChild(c.firstChild);
+      if(auto)v.scrollTop=v.scrollHeight;
+    };
+    ws.onclose=function(){if(!dead){st.textContent='Disconnected. Reconnecting...';setTimeout(connect,3000);}};
+    ws.onerror=function(){ws.close();};
+  }
+  v.addEventListener('scroll',function(){
+    var atBot=v.scrollHeight-v.scrollTop-v.clientHeight<30;
+    auto=atBot;sb.classList.toggle('hidden',atBot);
+  });
+  sb.addEventListener('click',function(){v.scrollTop=v.scrollHeight;auto=true;sb.classList.add('hidden');});
+  document.addEventListener('htmx:beforeSwap',function cleanup(){dead=true;if(ws)ws.close();document.removeEventListener('htmx:beforeSwap',cleanup);});
+  connect();
+})()`)}
+        </script>
       </section>
     )}
   </div>

@@ -133,6 +133,56 @@ export interface ServiceInfo {
   status: string;
 }
 
+export async function streamContainerLogs(
+  name: string,
+  onLine: (line: string) => void,
+  signal: AbortSignal
+): Promise<void> {
+  const res = await fetch(
+    `http://localhost/containers/${name}/logs?follow=true&stdout=true&stderr=true&tail=200`,
+    { unix: DOCKER_SOCK, signal } as any
+  );
+
+  if (!res.ok || !res.body) return;
+
+  const reader = res.body.getReader();
+  let buffer = new Uint8Array(0);
+  const decoder = new TextDecoder();
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      // Append to buffer
+      const next = new Uint8Array(buffer.length + value.length);
+      next.set(buffer);
+      next.set(value, buffer.length);
+      buffer = next;
+
+      // Process complete Docker multiplex frames (8-byte header + payload)
+      while (buffer.length >= 8) {
+        const size =
+          (buffer[4]! << 24) |
+          (buffer[5]! << 16) |
+          (buffer[6]! << 8) |
+          buffer[7]!;
+        if (buffer.length < 8 + size) break;
+
+        const payload = decoder.decode(buffer.slice(8, 8 + size));
+        buffer = buffer.slice(8 + size);
+
+        for (const line of payload.split("\n")) {
+          const trimmed = line.replace(/\r$/, "");
+          if (trimmed) onLine(trimmed);
+        }
+      }
+    }
+  } catch (e: any) {
+    if (e.name !== "AbortError") throw e;
+  }
+}
+
 export async function getAllContainers(): Promise<ServiceInfo[]> {
   const res = await dockerFetch("/containers/json?all=true");
   const containers: ContainerInfo[] = await res.json();
