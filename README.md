@@ -15,7 +15,7 @@ A single ARM VPS (Hetzner, Debian) running Docker Compose with:
 - **Backups** — [itzg/docker-mc-backup](https://github.com/itzg/docker-mc-backup) sidecars for scheduled world backups
 - **SSL** — Wildcard Let's Encrypt cert via self-hosted [acme-dns](https://github.com/joohoi/acme-dns)
 
-Players connect to `<server>.mc.danny.is:25565`. BlueMap UIs are at `https://map-<server>.mc.danny.is`.
+Players connect to `<server>.mc.danny.is:25565`. BlueMap UIs are at `https://map-<server>.mc.danny.is`. A web dashboard lives at `https://dashboard.mc.danny.is`.
 
 ## Project Structure
 
@@ -37,6 +37,7 @@ Players connect to `<server>.mc.danny.is:25565`. BlueMap UIs are at `https://map
 ├── nginx/conf.d/
 │   ├── bluemap.conf                # Generated — Nginx reverse proxy for BlueMap UIs
 │   └── ssl.conf                    # SSL certificate paths
+├── dashboard/                      # Web dashboard (Hono/Bun, systemd service)
 ├── acme-dns/                       # Self-hosted acme-dns (Dockerfile + config)
 ├── docs/                           # Architecture docs and task tracking
 └── tests/                          # pytest suite
@@ -148,6 +149,17 @@ Chunky parameters are set on startup via RCON. Generation starts when the first 
 ## Backups
 
 Servers with a `backup` block get an [itzg/docker-mc-backup](https://github.com/itzg/docker-mc-backup) sidecar that handles scheduling, safe save coordination (pause writes via RCON), compression, and pruning. Permanent-tier servers get daily backups by default when created with `mc-create`.
+
+## Dashboard
+
+A read-only web dashboard at `https://dashboard.mc.danny.is` for monitoring server status without SSH. Shows:
+
+- **Overview** — host CPU/RAM/disk, all Docker container health, server list with status and resource usage
+- **Server detail** — manifest config, runtime stats, disk usage breakdown by dimension, world data (seed, spawn, day/time, gamerules), per-player stats (position, health, play time, mobs killed, advancements), RCON command buttons, and live log streaming via WebSocket
+
+Built with Hono (JSX) + HTMX + Tailwind CSS, running on Bun as a host systemd service (`mc-dashboard`), not a Docker container — this gives it direct access to host `/proc`, the Docker socket, and server filesystem. Nginx reverse-proxies with basic auth and SSL.
+
+See `dashboard/CLAUDE.md` for the full project structure and development workflow.
 
 ## Mod Development
 

@@ -218,10 +218,32 @@ New data module (`src/world.ts`) following the same pattern as `host.ts` and `fi
 - **Restart workflow**: edit code → `bun run build:css` (if Tailwind classes changed) → `systemctl restart mc-dashboard` → refresh browser. No hot reload needed for a personal tool.
 - **Build step**: only Tailwind CSS compilation (`bun run build:css`). No JS bundling — Hono JSX renders server-side. Could add CSS build to systemd ExecStartPre or a small deploy script.
 
-### Phase 8: Documentation & setup
+### Phase 8: Documentation & setup ✅
 
-Update internal docs and `setup.sh` to cover dashboard-specific manual setup steps for a fresh server:
+#### 1. `setup.sh` — add dashboard setup section
 
-1. **`setup.sh`** — install `mc-dashboard.service` systemd unit (symlink + enable), create `nginx/.htpasswd` file.
-2. **Developer docs** — document the dashboard architecture, restart workflow, and nginx config in relevant docs files.
-3. **README.md** — add dashboard to the project overview if not already covered.
+New section (after cron jobs, before summary) that:
+
+- **Installs dashboard dependencies**: `sudo -iu danny bash -c 'cd /opt/minecraft/dashboard && bun install'`
+- **Builds Tailwind CSS**: `sudo -iu danny bash -c 'cd /opt/minecraft/dashboard && bun run build:css'`
+- **Symlinks the systemd unit**: `ln -sf /opt/minecraft/dashboard/mc-dashboard.service /etc/systemd/system/mc-dashboard.service`
+- **Enables the service**: `systemctl daemon-reload && systemctl enable mc-dashboard` (doesn't start — same pattern as the MC stack, which the user starts manually after setup)
+- **`.htpasswd` check**: Skip creation if `nginx/.htpasswd` already exists. If not, print a next-step note with the command: `printf 'danny:%s\n' "$(openssl passwd -apr1 'PASSWORD')" > nginx/.htpasswd`
+- **Update summary section**: Add `mc-dashboard` to the "Installed" printout. Add a next-step for creating `.htpasswd` if it wasn't present.
+
+#### 2. `README.md` — add dashboard section
+
+- Add a **Dashboard** section after "Backups" (before "Mod Development") covering: what it is (`https://dashboard.mc.danny.is`), what it shows (server status, host metrics, disk usage, world data, player stats, live logs, RCON), stack (Hono + HTMX + Tailwind on Bun, systemd service, not Docker), basic auth via Nginx, pointer to `dashboard/CLAUDE.md` for dev docs.
+- Add `dashboard/` to the project structure tree.
+- Mention `dashboard.mc.danny.is` alongside the existing BlueMap URL pattern in the Architecture/opening paragraph.
+
+#### 3. Docs updates — minor additions to existing files
+
+- **`docs/dns-and-routing.md`**:
+  - Add `dashboard.mc.danny.is` to the Domain Structure list.
+  - Add a "Dashboard" entry in the Traffic Flow section (browser → Nginx 443 → localhost:3100 → Hono/Bun).
+  - Add port 3100 to the Port Summary table.
+- **`docs/server-details.md`**:
+  - Add `mc-dashboard` to Installed Software under Infrastructure (systemd service, Hono/Bun on port 3100).
+
+No new docs files needed — `dashboard/CLAUDE.md` already covers the dev workflow.

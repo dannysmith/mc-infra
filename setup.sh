@@ -365,7 +365,34 @@ chmod 644 "$CRON_FILE"
 echo "    Installed /etc/cron.d/mc-infra (weekly Docker cleanup)"
 
 # ---------------------------------------------------------------------------
-# 16. Summary
+# 16. Dashboard
+# ---------------------------------------------------------------------------
+
+echo "==> Setting up MC dashboard..."
+
+# Install dependencies and build CSS
+sudo -iu danny bash -c 'cd /opt/minecraft/dashboard && bun install --frozen-lockfile' >/dev/null 2>&1
+echo "    Installed dashboard dependencies"
+sudo -iu danny bash -c 'cd /opt/minecraft/dashboard && bun run build:css' >/dev/null 2>&1
+echo "    Built Tailwind CSS"
+
+# Install systemd service
+ln -sf /opt/minecraft/dashboard/mc-dashboard.service /etc/systemd/system/mc-dashboard.service
+systemctl daemon-reload
+systemctl enable mc-dashboard >/dev/null 2>&1
+echo "    Enabled mc-dashboard.service (will start on boot)"
+
+# Check for htpasswd
+if [ ! -f /opt/minecraft/nginx/.htpasswd ]; then
+    echo "    ⚠  nginx/.htpasswd not found — dashboard auth won't work until you create it"
+    echo "       Run: printf 'danny:%s\\n' \"\$(openssl passwd -apr1 'YOUR_PASSWORD')\" > /opt/minecraft/nginx/.htpasswd"
+    HTPASSWD_MISSING=true
+else
+    echo "    nginx/.htpasswd already exists"
+fi
+
+# ---------------------------------------------------------------------------
+# 17. Summary
 # ---------------------------------------------------------------------------
 
 echo ""
@@ -393,6 +420,9 @@ echo "  - UFW:             $(ufw status | head -1)"
 echo "  - fail2ban:        $(systemctl is-active fail2ban 2>/dev/null)"
 echo "  - Unattended upgrades: $(systemctl is-active unattended-upgrades 2>/dev/null)"
 echo ""
+echo "Services:"
+echo "  - mc-dashboard:    $(systemctl is-enabled mc-dashboard 2>/dev/null) ($(systemctl is-active mc-dashboard 2>/dev/null))"
+echo ""
 echo "Configuration:"
 echo "  - Timezone:        $(timedatectl show -p Timezone --value)"
 echo "  - Nginx:           mc-infra include added"
@@ -411,4 +441,8 @@ echo "  5. Start the stack (as danny):"
 echo "     cd /opt/minecraft && op run --env-file=.env.tpl -- docker compose up -d"
 echo "  6. Set up SSL certificate (as danny):"
 echo "     sudo /opt/minecraft/setup-ssl.sh"
+if [ "${HTPASSWD_MISSING:-}" = "true" ]; then
+echo "  7. Create dashboard basic auth:"
+echo "     printf 'danny:%s\\n' \"\$(openssl passwd -apr1 'YOUR_PASSWORD')\" > /opt/minecraft/nginx/.htpasswd"
+fi
 echo ""
