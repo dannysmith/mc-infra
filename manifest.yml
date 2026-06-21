@@ -15,7 +15,7 @@ mod_groups:
 servers:
   n19:
     type: FABRIC
-    version: LATEST
+    version: 1.21.11
     mode: creative
     tier: semi-permanent
     mod_groups:
@@ -23,7 +23,8 @@ servers:
     modrinth_mods:
     - bluemap
     - distanthorizons
-    jar_mods: []
+    jar_mods:
+    - bluemap-structures-1.0.0-mc1.21.11.jar
     modrinth_version_type: beta
     svc: false
     seed: '493527618652710797'
@@ -44,7 +45,8 @@ servers:
     - bluemap
     - distanthorizons
     - simple-voice-chat
-    jar_mods: []
+    jar_mods:
+    - bluemap-structures-1.0.0-mc26.2.jar
     modrinth_version_type: beta
     svc: true
     seed: null

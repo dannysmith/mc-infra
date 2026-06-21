@@ -33,7 +33,7 @@ services:
     environment:
       EULA: "TRUE"
       TYPE: FABRIC
-      VERSION: LATEST
+      VERSION: 1.21.11
       MEMORY: 3G
       USE_AIKAR_FLAGS: "true"
       REMOVE_OLD_MODS: "TRUE"
@@ -64,10 +64,12 @@ services:
         chunky start
       RCON_CMDS_LAST_DISCONNECT: |
         chunky pause
+      MODS: /shared-mods/bluemap-structures-1.0.0-mc1.21.11.jar
     ports:
     - "127.0.0.1:8100:8100"
     volumes:
     - ./servers/n19/data:/data
+    - ./shared/mods:/shared-mods:ro
     networks:
     - minecraft-net
     deploy:
@@ -106,11 +108,13 @@ services:
       MOTD: "Creative Server"
       MODE: creative
       RCON_PASSWORD: ${RCON_PASSWORD:-changeme}
+      MODS: /shared-mods/bluemap-structures-1.0.0-mc26.2.jar
     ports:
     - "24454:24454/udp"
     - "127.0.0.1:8101:8100"
     volumes:
     - ./servers/creative/data:/data
+    - ./shared/mods:/shared-mods:ro
     networks:
     - minecraft-net
     deploy:

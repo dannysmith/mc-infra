@@ -7,6 +7,8 @@ backups/
 
 # Shared mod JARs (non-Modrinth, dev builds, etc.)
 shared/mods/*.jar
+# ...except vendored release jars we want version-controlled
+!shared/mods/bluemap-structures-*.jar
 
 # Resolved secrets (only .env.tpl is tracked)
 .env
