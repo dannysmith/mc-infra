@@ -36,7 +36,7 @@ servers:
     created: '2026-03-05'
   creative:
     type: FABRIC
-    version: LATEST
+    version: '26.2'
     mode: creative
     tier: permanent
     mod_groups:
@@ -59,7 +59,7 @@ servers:
     created: '2026-03-05'
   bmdev:
     type: FABRIC
-    version: LATEST
+    version: '26.2'
     mode: creative
     tier: ephemeral
     mod_groups:

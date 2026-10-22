@@ -86,7 +86,7 @@ services:
     environment:
       EULA: "TRUE"
       TYPE: FABRIC
-      VERSION: LATEST
+      VERSION: '26.2'
       MEMORY: 4G
       USE_AIKAR_FLAGS: "true"
       REMOVE_OLD_MODS: "TRUE"
@@ -149,7 +149,7 @@ services:
     environment:
       EULA: "TRUE"
       TYPE: FABRIC
-      VERSION: LATEST
+      VERSION: '26.2'
       MEMORY: 2G
       USE_AIKAR_FLAGS: "true"
       REMOVE_OLD_MODS: "TRUE"
